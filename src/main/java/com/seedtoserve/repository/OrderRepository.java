@@ -15,6 +15,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer>{
 	List<Order> findByCustomer(Customer customer);
 
 	Optional<Customer> findByIdAndCustomerId(int orderId, int customerId);
+	
+	Optional<Order> findByRazorpayOrderId(String razorpayOrderId);
 
 	
 	

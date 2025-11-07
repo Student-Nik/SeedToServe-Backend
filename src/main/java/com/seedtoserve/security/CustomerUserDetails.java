@@ -40,4 +40,10 @@ public class CustomerUserDetails implements UserDetails{
     public Customer getCustomer() {
         return customer;
     }
+    
+    public Long getId() {
+        return customer.getId();
+    }
+
+
 }

@@ -58,8 +58,9 @@ public class RegisterAndLoginController {
     }
 
     // Login
+ // Login
     @PostMapping("/api/auth/login")
-    public ResponseEntity<String> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<JwtLoginResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             // Authenticate the user
             Authentication auth = authenticationManager.authenticate(
@@ -79,11 +80,12 @@ public class RegisterAndLoginController {
             response.setUsername(customer.getEmail());
             response.setRole(customer.getRegistrationType().toUpperCase());
 
-            return ResponseEntity.status(HttpStatus.OK)
-            		.body("You have successfully logged in.");
+            //  Return JSON with the token
+            return ResponseEntity.ok(response);
 
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
+
 }

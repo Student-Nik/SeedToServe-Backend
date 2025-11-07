@@ -28,26 +28,28 @@ import lombok.NoArgsConstructor;
 @Table(name="orders")
 public class Order {
 
-	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	private int id;
-	
-	@ManyToOne // Many Order one Customer
-	private Customer customer;
-	
-	@Enumerated(EnumType.STRING)
-	private OrderStatus status;
-	
-	private LocalDateTime orderDate;
-	
+    @Id
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    private int id; // Primary key
+
+    @Column(name = "razorpay_order_id")
+    private String razorpayOrderId; // Store Razorpay Order ID
+
+    @ManyToOne
+    private Customer customer;
+
+    @Enumerated(EnumType.STRING)
+    private OrderStatus status;
+
+    private LocalDateTime orderDate;
+
     private double totalAmount;
-    
+
     private String paymentMethod;
-    
-    @ManyToOne // Many Order one Address
+
+    @ManyToOne
     private AddressDetails addressDetails;
-    
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL) // Many OrderItems One Order
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems = new ArrayList<>();
-    
 }

@@ -16,6 +16,7 @@ import com.seedtoserve.security.CustomerUserDetails;
 import com.seedtoserve.repository.OrderRepository;
 import com.seedtoserve.service.PaymentVerificationService;
 import com.seedtoserve.service.RazorpayPaymentService;
+import com.seedtoserve.enums.OrderStatus;
 
 @RestController
 @RequestMapping("/api/payment")
@@ -34,13 +35,10 @@ public class PaymentController {
     @Autowired
     private RazorpayConfig razorpayConfig;
 
-    // Authenticated EndPoint 
+    // Create Payment
     @PostMapping("/create-payment/{orderId}")
-    public ResponseEntity<?> createPayment(
-            @PathVariable Integer orderId,
-            Authentication authentication) { // get Authentication object
+    public ResponseEntity<?> createPayment(@PathVariable Integer orderId, Authentication authentication) {
         try {
-            // Cast principal to your custom UserDetails
             CustomerUserDetails userDetails = (CustomerUserDetails) authentication.getPrincipal();
             Long customerId = userDetails.getCustomer().getId();
 
@@ -53,6 +51,11 @@ public class PaymentController {
 
             long totalPaise = Math.round(order.getTotalAmount() * 100);
             CreatePaymentResponseDto dto = razorpayPaymentService.createPayment(customerId, totalPaise);
+
+            // Save Razorpay Order ID and status
+            order.setRazorpayOrderId(dto.getRazorpayOrderId());
+            order.setStatus(OrderStatus.CREATED);  // ✅ Fixed: use enum directly
+            orderRepository.save(order);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Razorpay order created successfully!");
@@ -69,37 +72,7 @@ public class PaymentController {
         }
     }
 
-    // Public EndPoint
-    @PostMapping("/public/create-payment/{orderId}")
-    public ResponseEntity<?> publicCreatePayment(@PathVariable Integer orderId) {
-        try {
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Order not found!"));
-
-            Long customerId = order.getCustomer() != null ? order.getCustomer().getId() : null;
-            if (customerId == null) {
-                return ResponseEntity.status(400).body(Map.of("error", "Order has no customer!"));
-            }
-
-            long totalPaise = Math.round(order.getTotalAmount() * 100);
-            CreatePaymentResponseDto dto = razorpayPaymentService.createPayment(customerId, totalPaise);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Razorpay test order created successfully!");
-            response.put("razorpayOrderId", dto.getRazorpayOrderId());
-            response.put("amount", order.getTotalAmount());
-            response.put("currency", "INR");
-            response.put("orderId", orderId);
-            response.put("key", razorpayConfig.getKey());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // VERIFY PAYMENT
+    // Verify Payment
     @PostMapping("/verify")
     public ResponseEntity<?> verifyPayment(@RequestBody VerifyPaymentRequestDto req) {
         try {
@@ -109,10 +82,11 @@ public class PaymentController {
                     req.getRazorpaySignature()
             );
 
-            if (ok)
+            if (ok) {
                 return ResponseEntity.ok(Map.of("message", "Payment verified successfully"));
-            else
+            } else {
                 return ResponseEntity.status(400).body(Map.of("error", "Invalid signature"));
+            }
 
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));

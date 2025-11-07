@@ -1,9 +1,11 @@
 package com.seedtoserve.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.seedtoserve.dto.OrderDTO;
 import com.seedtoserve.dto.OrderResponseDTO;
 import com.seedtoserve.model.Customer;
+import com.seedtoserve.security.CustomerUserDetails;
 import com.seedtoserve.service.CustomerService;
 import com.seedtoserve.service.OrderService;
 
@@ -45,4 +48,28 @@ public class OrderController {
         Customer customer = customerService.getLoggedInCustomer();
         return orderService.getOrdersByCustomer(customer.getId());
     }
+    
+ // Fetch latest order for the logged-in customer
+    @GetMapping("/latest-order")
+    public ResponseEntity<?> getLatestOrder(@AuthenticationPrincipal CustomerUserDetails userDetails) {
+        try {
+            Long customerId = userDetails.getCustomer().getId(); 
+
+            List<OrderResponseDTO> orders = orderService.getOrdersByCustomer(customerId);
+
+            if (orders.isEmpty()) {
+                return ResponseEntity.ok(Map.of("message", "No orders found!"));
+            }
+
+            OrderResponseDTO latestOrder = orders.get(orders.size() - 1);
+            return ResponseEntity.ok(latestOrder);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
+    
+   
+
 }

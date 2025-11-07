@@ -7,6 +7,7 @@ public enum OrderStatus {
     SHIPPED,        // Handed over to courier
     DELIVERED,      // Customer received
     CANCELLED,      // Cancelled by user or admin
-    FAILED          // Payment failed
+    FAILED,       // Payment failed
+    CREATED
 }
 
