@@ -38,21 +38,23 @@ public class CustomerService {
 
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    
     // Register
     public ResponseEntity<String> registerUser(CustomerDTO customerDto) {
 
-        Optional<Customer> existingUser = customerRepository.findByEmail(customerDto.getEmail());
-
-        if (existingUser.isPresent()) {
-            return ResponseEntity.status(HttpStatus.OK)
+        // Check duplicate email
+        if (customerRepository.findByEmail(customerDto.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("This E-mail already exists, please try another one!");
         }
 
+        //  Check password match
         if (!customerDto.getPassword().equals(customerDto.getConfirmPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Password and Confirm Password do not match!");
         }
 
+        // Map DTO to Entity
         Customer customer = new Customer();
         customer.setRegistrationType(customerDto.getRegistrationType());
         customer.setFirstName(customerDto.getFirstName());
@@ -60,13 +62,19 @@ public class CustomerService {
         customer.setEmail(customerDto.getEmail());
         customer.setPassword(passwordEncoder.encode(customerDto.getPassword()));
 
-        
+        // 4️ Save Customer
         customerRepository.save(customer);
-        
+
+        // 5️ Prepare full name for email
+        String fullName = customer.getFirstName() + " " + customer.getLastName();
+
+        // 6️ Send email based on role
+        mailService.sendAndLogEmail(customer.getEmail(), fullName, customer.getRegistrationType());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Customer registration successful");
+                .body("Customer registration successful and email sent!");
     }
+
 
     // Login
     public ResponseEntity<JwtLoginResponse> loginUser(LoginRequest loginRequest) {

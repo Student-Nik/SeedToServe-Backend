@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.seedtoserve.dto.CustomerDTO;
 import com.seedtoserve.dto.JwtLoginResponse;
 import com.seedtoserve.dto.LoginRequest;
 import com.seedtoserve.dto.RegisterAndSendEmailRequestDTO;
@@ -32,9 +33,6 @@ public class RegisterAndLoginController {
     private CustomerService customerService;
 
     @Autowired
-    private MailService mailService;
-
-    @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
@@ -42,23 +40,16 @@ public class RegisterAndLoginController {
 
     // Registration
     @PostMapping("/api/auth/register")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody RegisterAndSendEmailRequestDTO request) {
+    public ResponseEntity<String> registerUser(@Valid @RequestBody CustomerDTO customerDto) {
 
-        // 1️ Register the customer
-        ResponseEntity<String> userRegistration = customerService.registerUser(request.getCustomerDto());
+        // 1️⃣ Register the customer and send email internally
+        ResponseEntity<String> response = customerService.registerUser(customerDto);
 
-        // 2️ Send email if registration is successful
-        if (userRegistration.getStatusCode() == HttpStatus.CREATED) {
-            Mail mail = request.getMail();
-            mailService.sendAndLogEmail(mail.getRecipient(), mail.getName(), mail.getRegistrationType());
-            return ResponseEntity.status(HttpStatus.CREATED).body("User registered and email sent.");
-        } else {
-            return userRegistration;
-        }
+        return response; // will return success or duplicate/password error
     }
 
+
     // Login
- // Login
     @PostMapping("/api/auth/login")
     public ResponseEntity<JwtLoginResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
