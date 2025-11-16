@@ -137,10 +137,15 @@ Integrated Razorpay Payment Gateway (backend + frontend).
 
 ### 🤝 Author
 
-👨‍💻 Nikhil Kute
-Student Developer | Passionate about Spring Boot, DevOps, and Cloud
-📧 nkute611@gmail.com
-🌐 www.linkedin.com/in/nikhil-kute-java
+**Nikhil Kute** 👨‍💻  
+
+**🎓 Student**  
+**💻 Java Developer**  
+**🔥 Passionate about:** Spring Boot | DevOps | Cloud  
+
+📧 [nkute611@gmail.com](mailto:nkute611@gmail.com)  
+🌐 [linkedin.com/in/nikhil-kute-java](https://www.linkedin.com/in/nikhil-kute-java)
+
 
 ### Show Support
 
