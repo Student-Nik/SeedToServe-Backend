@@ -1,5 +1,8 @@
 package com.seedtoserve.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +28,7 @@ import com.seedtoserve.service.MailService;
 
 import jakarta.validation.Valid;
 
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 public class RegisterAndLoginController {
 
@@ -42,10 +45,7 @@ public class RegisterAndLoginController {
     @PostMapping("/api/auth/register")
     public ResponseEntity<String> registerUser(@Valid @RequestBody CustomerDTO customerDto) {
 
-        // 1️⃣ Register the customer and send email internally
-        ResponseEntity<String> response = customerService.registerUser(customerDto);
-
-        return response; // will return success or duplicate/password error
+        return customerService.registerUser(customerDto);
     }
 
 

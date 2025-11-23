@@ -14,11 +14,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.seedtoserve.config.GoogleSuccessHandler;
+
 @Configuration
 public class SecurityConfig {
 
     @Autowired
     private JwtTokenFilter jwtTokenFilter;
+    
+    @Autowired
+    private GoogleSuccessHandler googleSuccessHandler;
 
     // Password encoder bean for hashing passwords
     @Bean
@@ -39,7 +44,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // Disable CSRF since we use JWT tokens
             .cors(cors -> cors.configurationSource(request -> {
                 org.springframework.web.cors.CorsConfiguration corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOrigins(List.of("http://127.0.0.1:3000/")); // frontend origin
+                corsConfig.setAllowedOrigins(List.of("http://localhost:5173")); // frontend origin
                 corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 corsConfig.setAllowedHeaders(List.of("*"));
                 return corsConfig;
@@ -53,10 +58,18 @@ public class SecurityConfig {
                 // Role-based routes
                 .requestMatchers("/api/farmer/**").hasRole("FARMER")
                 .requestMatchers("/api/buyer/**").hasRole("BUYER")
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
 
                 // All other requests need authentication
                 .anyRequest().authenticated()
+               
             )
+            .oauth2Login(oauth -> oauth
+            	    .loginPage("/oauth2/authorize/google")
+            	    .successHandler(googleSuccessHandler)
+            	)
+
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // Add JWT token filter before UsernamePasswordAuthenticationFilter
