@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/contact/**").permitAll()
 
                 // Role-based routes
                 .requestMatchers("/api/farmer/**").hasRole("FARMER")
