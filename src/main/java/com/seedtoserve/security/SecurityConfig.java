@@ -57,7 +57,7 @@ public class SecurityConfig {
                 .requestMatchers("/contact/**").permitAll()
 
                 // Role-based routes
-                .requestMatchers("/api/farmer/**").hasRole("FARMER")
+                .requestMatchers("/api/farmer/categories/**").hasRole("FARMER")
                 .requestMatchers("/api/buyer/**").hasRole("BUYER")
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()

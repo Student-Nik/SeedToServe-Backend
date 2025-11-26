@@ -16,8 +16,8 @@ public class JwtUtil {
     // Secret key for signing the token
     private final String SECRET_KEY = "wertyuiopsad345678mnnejru4569o5i7uinmfd4578cwe5678ikmnbgt678olmnbgfinrhjermdhfrtmjtrgjei574";
 
-    // Token validity duration (20 minutes)
-    private final long TOKEN_EXPIRY_DURATION = 20 * 60 * 1000;
+    // Token validity duration (60 minutes)
+    private final long TOKEN_EXPIRY_DURATION = 60 * 60 * 1000;
 
     // Convert the secret string into a SecretKey (HMAC-SHA)
     private SecretKey getSecretKey() {
