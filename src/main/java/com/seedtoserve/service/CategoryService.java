@@ -1,6 +1,7 @@
 package com.seedtoserve.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,13 +26,15 @@ public class CategoryService {
 	
 	// Add a Category
 	
-	public ResponseEntity<String> addCategory(CategoryDTO categoryDto){
+	public ResponseEntity<Map<String, Object>> addCategory(CategoryDTO categoryDto){
 		
 		Optional<Category> isExistingCategory = categoryRepository.findByName(categoryDto.getName());
 		
 		if(isExistingCategory.isPresent()) {
-			return ResponseEntity.status(HttpStatus.OK)
-					.body("This category is already exist!");
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+	                .body(Map.of(
+	                        "message", "This category already exists!"
+	                ));
 		}else {
 			Category category = new Category();
 			category.setName(categoryDto.getName());
@@ -39,8 +42,11 @@ public class CategoryService {
 			
 			categoryRepository.save(category);
 			
-			return ResponseEntity.status(HttpStatus.CREATED)
-					.body("Category Created Successfully!");
+			return ResponseEntity.status(HttpStatus.OK)
+	                .body(Map.of(
+	                        "message", "Category updated successfully!",
+	                        "category", categoryDto
+	                ));
 			
 		}
 		
@@ -67,7 +73,7 @@ public class CategoryService {
 	// Update Category : Re-assign the values.
 
 	@Transactional
-	public ResponseEntity<String> updateCategory(CategoryDTO categoryDto, String name) {
+	public ResponseEntity<Map<String,Object>> updateCategory(CategoryDTO categoryDto, String name) {
 		
 		Optional<Category> isExistingCategory = categoryRepository.findByName(name);
 		
@@ -81,10 +87,16 @@ public class CategoryService {
 			categoryRepository.save(category);
 			
 			return ResponseEntity.status(HttpStatus.OK)
-					.body("Category Updated Successfully!");
+	                .body(Map.of(
+	                        "message", "Category updated successfully!",
+	                        "category", categoryDto
+	                ));
 		}
+		
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body("Category not found!");
+	            .body(Map.of(
+	                    "message", "Category not found!"
+	            ));
 	}
 	
 	// Show Categories

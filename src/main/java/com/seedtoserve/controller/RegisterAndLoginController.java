@@ -1,6 +1,5 @@
 package com.seedtoserve.controller;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,13 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.seedtoserve.dto.CustomerDTO;
 import com.seedtoserve.dto.JwtLoginResponse;
 import com.seedtoserve.dto.LoginRequest;
-import com.seedtoserve.dto.RegisterAndSendEmailRequestDTO;
 import com.seedtoserve.model.Customer;
-import com.seedtoserve.model.Mail;
 import com.seedtoserve.security.CustomerUserDetails;
 import com.seedtoserve.security.JwtUtil;
 import com.seedtoserve.service.CustomerService;
-import com.seedtoserve.service.MailService;
 
 import jakarta.validation.Valid;
 
@@ -43,11 +39,9 @@ public class RegisterAndLoginController {
 
     // Registration
     @PostMapping("/api/auth/register")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody CustomerDTO customerDto) {
-
+    public ResponseEntity<Map<String, Object>> registerUser(@Valid @RequestBody CustomerDTO customerDto) {
         return customerService.registerUser(customerDto);
     }
-
 
     // Login
     @PostMapping("/api/auth/login")

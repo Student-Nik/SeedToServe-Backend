@@ -1,6 +1,7 @@
 package com.seedtoserve.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.seedtoserve.dto.CategoryDTO;
-import com.seedtoserve.model.Category;
 import com.seedtoserve.service.CategoryService;
 
 import jakarta.validation.Valid;
@@ -29,7 +29,7 @@ public class CategoryController {
 	// Add Category
 	
 	@PostMapping("/add/category")
-	public ResponseEntity<String> addCategory(@Valid @RequestBody CategoryDTO categoryDto){
+	public ResponseEntity<Map<String,Object>> addCategory(@Valid @RequestBody CategoryDTO categoryDto){
 		return categoryService.addCategory(categoryDto);
 	}
 	
@@ -43,9 +43,12 @@ public class CategoryController {
 	// Update Category
 	
 	@PutMapping("/update/category/{name}")
-	public ResponseEntity<String> updateCategory(@RequestBody CategoryDTO categoryDto ,@PathVariable String name){
-		return categoryService.updateCategory(categoryDto, name);
+	public ResponseEntity<Map<String, Object>> updateCategory(
+	        @RequestBody CategoryDTO categoryDto,
+	        @PathVariable String name){
+	    return categoryService.updateCategory(categoryDto, name);
 	}
+
 	
 	@GetMapping("/show/categories")
 	public List<CategoryDTO> showCategories() {

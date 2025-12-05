@@ -1,5 +1,7 @@
 package com.seedtoserve.service;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,18 +40,18 @@ public class CustomerService {
 
     
     // Register
-    public ResponseEntity<String> registerUser(CustomerDTO customerDto) {
+    public ResponseEntity<Map<String, Object>> registerUser(CustomerDTO customerDto) {
 
-        // Check duplicate email
+    	// Check duplicate email
         if (customerRepository.findByEmail(customerDto.getEmail()).isPresent()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("This E-mail already exists, please try another one!");
+                    .body(Map.of("message", "This E-mail already exists, please try another one!"));
         }
 
-        //  Check password match
+        // Check password match
         if (!customerDto.getPassword().equals(customerDto.getConfirmPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Password and Confirm Password do not match!");
+                    .body(Map.of("message", "Password and Confirm Password do not match!"));
         }
 
         // Map DTO to Entity
@@ -70,7 +72,11 @@ public class CustomerService {
         mailService.sendAndLogEmail(customer.getEmail(), fullName, customer.getRegistrationType());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body("Customer registration successful and email sent!");
+                .body(Map.of(
+                    "message", "Customer registration successful and email sent!",
+                    "registrationType", customer.getRegistrationType()
+                ));
+
     }
 
 
