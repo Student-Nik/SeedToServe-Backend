@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.http.HttpHeaders;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class ProductService {
 	private CategoryRepository categoryRepository;
 	
 	// Add Product
-	public ResponseEntity<String> addProduct(ProductDTO productDto,MultipartFile imageFile) throws IOException {
+	public ResponseEntity<Map<String, Object>> addProduct(ProductDTO productDto,MultipartFile imageFile) throws IOException {
 
         // Check if product exists
         Optional<Product> existing = productRepository.findByName(productDto.getName());
@@ -63,7 +64,7 @@ public class ProductService {
         productRepository.save(product);
         
         return ResponseEntity.status(HttpStatus.CREATED)
-        		.body("Product added successfully!");
+        		.body(Map.of("Product details added successfully!",productDto));
     }
 	
 	// Delete Product
@@ -87,7 +88,7 @@ public class ProductService {
 	// Update Product : Re-assign the values
 	
 	@Transactional
-	public ResponseEntity<String> updateProduct(ProductDTO productDto, MultipartFile imageFile, String name) throws IOException{
+	public ResponseEntity<Map<String,Object>> updateProduct(ProductDTO productDto, MultipartFile imageFile, String name) throws IOException{
 		
 		Optional<Product> isExistingProduct = productRepository.findByName(name);
 		
@@ -120,10 +121,10 @@ public class ProductService {
 			productRepository.save(product);
 			
 			return ResponseEntity.status(HttpStatus.ACCEPTED)
-					.body("Product updated successfully!");
+					.body(Map.of("Product updated successfully!",productDto));
 		}else {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body("Product not found!");
+					.body(Map.of("Product Not found!",productDto));
 		}
 	}
 	

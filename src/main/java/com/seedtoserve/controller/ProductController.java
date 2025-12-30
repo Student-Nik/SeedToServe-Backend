@@ -2,6 +2,7 @@ package com.seedtoserve.controller;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -45,20 +46,23 @@ public class ProductController {
 	
 	// Add a Product
 	
-	@PostMapping(value="/add/product", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<String> addProduct(
-			@Valid
+	@PostMapping(value="/add/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<Map<String, Object>> addProduct(
+	        @Valid
 	        @RequestPart ProductDTO productDto,
 	        @RequestPart MultipartFile imageFile) {
 	    try {
 	        return productService.addProduct(productDto, imageFile);
 	    } catch (IOException e) {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error while processing image: " + e.getMessage());
+	                .body(Map.of("message", "Error while processing image",
+	                             "error", e.getMessage()));
 	    } catch (RuntimeException e) {
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+	                .body(Map.of("message", e.getMessage()));
 	    }
 	}
+
 
 	// Delete a Product
 	
@@ -69,12 +73,14 @@ public class ProductController {
 	
 	// Update a Product
 	
-	@PutMapping("/update/product/{name}")
-	public ResponseEntity<String> updateProduct(@RequestPart ProductDTO productDto,
-	        @RequestPart(required = false ) MultipartFile imageFile,
-	        @PathVariable String name) throws IOException{
-		return productService.updateProduct(productDto, imageFile,name);
+	@PutMapping(value = "/update/product/{name}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<Map<String, Object>> updateProduct(
+	        @RequestPart ProductDTO productDto,
+	        @RequestPart(required = false) MultipartFile imageFile,
+	        @PathVariable String name) throws IOException {
+	    return productService.updateProduct(productDto, imageFile, name);
 	}
+
 	
 	// Show Products Details (name, price, stock, category )
 	

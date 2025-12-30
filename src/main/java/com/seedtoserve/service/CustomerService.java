@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.seedtoserve.dto.ApiResponse;
 import com.seedtoserve.dto.CustomerDTO;
 import com.seedtoserve.dto.LoginRequest;
 import com.seedtoserve.dto.JwtLoginResponse;
@@ -79,11 +80,9 @@ public class CustomerService {
 
     }
 
-
-    // Login
-    public ResponseEntity<JwtLoginResponse> loginUser(LoginRequest loginRequest) {
+    // Login 
+    public ResponseEntity<ApiResponse<JwtLoginResponse>> loginUser(LoginRequest loginRequest) {
         try {
-            // Authenticate using AuthenticationManager
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -91,25 +90,37 @@ public class CustomerService {
                     )
             );
 
-            // Fetch user details
-            Customer customer = customerRepository.findByEmail(loginRequest.getEmail()).get();
+            Customer customer = customerRepository
+                    .findByEmail(loginRequest.getEmail())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
             CustomerUserDetails userDetails = new CustomerUserDetails(customer);
 
-            // Generate JWT
             String token = jwtUtil.createToken(userDetails.getUsername());
 
-            // Prepare JWT response
-            JwtLoginResponse response = new JwtLoginResponse();
-            response.setToken(token);
-            response.setUsername(customer.getEmail());
-            response.setRole(customer.getRegistrationType().toUpperCase());
+            JwtLoginResponse jwtResponse = new JwtLoginResponse();
+            jwtResponse.setToken(token);
+            jwtResponse.setUsername(customer.getEmail());
+            jwtResponse.setRole(customer.getRegistrationType().toUpperCase());
 
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(
+                    new ApiResponse<>(
+                            true,
+                            "Login successful!",
+                            jwtResponse
+                    )
+            );
 
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(
+                            false,
+                            "Invalid Credentials!",
+                            null
+                    ));
         }
     }
+
     
 
     public Customer getLoggedInCustomer() {

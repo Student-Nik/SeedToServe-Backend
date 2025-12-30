@@ -47,9 +47,7 @@ public class CategoryService {
 	                        "message", "Category updated successfully!",
 	                        "category", categoryDto
 	                ));
-			
 		}
-		
 	}
 	
 	// Delete Category
