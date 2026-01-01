@@ -46,22 +46,31 @@ public class ProductController {
 	
 	// Add a Product
 	
-	@PostMapping(value="/add/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<Map<String, Object>> addProduct(
-	        @Valid
-	        @RequestPart ProductDTO productDto,
-	        @RequestPart MultipartFile imageFile) {
-	    try {
-	        return productService.addProduct(productDto, imageFile);
-	    } catch (IOException e) {
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body(Map.of("message", "Error while processing image",
-	                             "error", e.getMessage()));
-	    } catch (RuntimeException e) {
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-	                .body(Map.of("message", e.getMessage()));
-	    }
-	}
+	@PostMapping(
+		    value = "/add/product",
+		    consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+		)
+		public ResponseEntity<Map<String, Object>> addProduct(
+		        @Valid
+		        @RequestPart("productDto") ProductDTO productDto,
+
+		        @RequestPart(value = "image", required = false)
+		        MultipartFile imageFile
+		) {
+		    try {
+		        return productService.addProduct(productDto, imageFile);
+		    } catch (IOException e) {
+		        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+		                .body(Map.of(
+		                        "message", "Error while processing image",
+		                        "error", e.getMessage()
+		                ));
+		    } catch (RuntimeException e) {
+		        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+		                .body(Map.of("message", e.getMessage()));
+		    }
+		}
+
 
 
 	// Delete a Product

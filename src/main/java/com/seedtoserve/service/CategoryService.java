@@ -44,7 +44,7 @@ public class CategoryService {
 			
 			return ResponseEntity.status(HttpStatus.OK)
 	                .body(Map.of(
-	                        "message", "Category updated successfully!",
+	                        "message", "Category added successfully!",
 	                        "category", categoryDto
 	                ));
 		}
@@ -99,23 +99,18 @@ public class CategoryService {
 	
 	// Show Categories
 	
-	public List<CategoryDTO> showCategories() {
+	public List<Category> showCategories() {
 		
 		// Here, it exposes all records of the table.
 		// return categoryRepository.findAll();
 		
 		// Use DTO to return only those records you need.
 		
-		return categoryRepository.findAll()
-				.stream()
-				.map(cat -> {
-				  CategoryDTO dto = new CategoryDTO();
-		          dto.setName(cat.getName());
-		          dto.setDescription(cat.getDescription());
-		          return dto;
-				}).toList();
+		return categoryRepository.findAll();
 		
 	}
+	
+	
 	
 
 	

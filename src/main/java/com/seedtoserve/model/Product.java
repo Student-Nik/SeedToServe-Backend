@@ -34,7 +34,6 @@ public class Product {
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name="category_id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Category category;
 	
 	private String description;

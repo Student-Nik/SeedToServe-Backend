@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.seedtoserve.dto.CategoryDTO;
+import com.seedtoserve.model.Category;
 import com.seedtoserve.service.CategoryService;
 
 import jakarta.validation.Valid;
@@ -48,10 +49,12 @@ public class CategoryController {
 	        @PathVariable String name){
 	    return categoryService.updateCategory(categoryDto, name);
 	}
-
+	
+	// Show Category
 	
 	@GetMapping("/show/categories")
-	public List<CategoryDTO> showCategories() {
+	public List<Category> showCategories() {
 		return categoryService.showCategories();
 	}
+
 }
