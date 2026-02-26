@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
 
 import com.seedtoserve.config.GoogleSuccessHandler;
 
@@ -33,41 +34,46 @@ public class SecurityConfig {
 
     // 🔐 Authentication Manager
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
-    // 🔐 Main Security Config
+    // 🔐 Main Security Configuration
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            // Disable CSRF (JWT based app)
+            // Disable CSRF (JWT based)
             .csrf(csrf -> csrf.disable())
 
-            // Enable CORS for React (Vite 5173)
+            // CORS Configuration for React (localhost:5173)
             .cors(cors -> cors.configurationSource(request -> {
-                org.springframework.web.cors.CorsConfiguration corsConfig =
-                        new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOrigins(List.of("http://localhost:5173"));
-                corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                corsConfig.setAllowedHeaders(List.of("*"));
-                corsConfig.setAllowCredentials(true);
-                return corsConfig;
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOrigins(List.of("http://localhost:5173"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of("*"));
+                config.setAllowCredentials(true);
+                return config;
             }))
 
             // Authorization Rules
             .authorizeHttpRequests(auth -> auth
 
-                // ✅ PUBLIC APIs
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                .requestMatchers("/error").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/contact/**").permitAll()
+                // ✅ PUBLIC ENDPOINTS
+                .requestMatchers(
+                        "/api/auth/**",
+                        "/oauth2/**",
+                        "/login/oauth2/**",
+                        "/error",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/contact/**",
 
-                // ✅ PUBLIC PRODUCTS (IMPORTANT FIX)
-                .requestMatchers("/api/farmer/products/show/products").permitAll()
+                        // PUBLIC PRODUCTS & CATEGORIES
+                        "/api/farmer/products/show/products",
+                        "/api/farmer/categories/show/categories"
+                ).permitAll()
 
                 // 🔒 FARMER APIs
                 .requestMatchers("/api/farmer/**").hasRole("FARMER")
@@ -75,22 +81,21 @@ public class SecurityConfig {
                 // 🔒 BUYER APIs
                 .requestMatchers("/api/buyer/**").hasRole("BUYER")
 
-                // 🔐 Everything else needs login
+                // 🔐 Everything else requires authentication
                 .anyRequest().authenticated()
             )
 
             // Google OAuth2 Login
             .oauth2Login(oauth -> oauth
-                    .loginPage("/oauth2/authorize/google")
                     .successHandler(googleSuccessHandler)
             )
 
-            // Stateless Session (JWT)
+            // ⚠ IMPORTANT: Allow session for OAuth flow
             .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                    session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             );
 
-        // Add JWT filter before UsernamePasswordAuthenticationFilter
+        // Add JWT filter
         http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
