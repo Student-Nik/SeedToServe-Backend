@@ -21,62 +21,78 @@ public class SecurityConfig {
 
     @Autowired
     private JwtTokenFilter jwtTokenFilter;
-    
+
     @Autowired
     private GoogleSuccessHandler googleSuccessHandler;
 
-    // Password encoder bean for hashing passwords
+    // 🔐 Password Encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Expose AuthenticationManager bean for login authentication
+    // 🔐 Authentication Manager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
+    // 🔐 Main Security Config
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF since we use JWT tokens
+            // Disable CSRF (JWT based app)
+            .csrf(csrf -> csrf.disable())
+
+            // Enable CORS for React (Vite 5173)
             .cors(cors -> cors.configurationSource(request -> {
-                org.springframework.web.cors.CorsConfiguration corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOrigins(List.of("http://localhost:5173")); // frontend origin
+                org.springframework.web.cors.CorsConfiguration corsConfig =
+                        new org.springframework.web.cors.CorsConfiguration();
+                corsConfig.setAllowedOrigins(List.of("http://localhost:5173"));
                 corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                 corsConfig.setAllowedHeaders(List.of("*"));
+                corsConfig.setAllowCredentials(true);
                 return corsConfig;
             }))
+
+            // Authorization Rules
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
+
+                // ✅ PUBLIC APIs
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/contact/**").permitAll()
 
-                // Role-based routes
-                .requestMatchers("/api/farmer/categories/**").hasRole("FARMER")
+                // ✅ PUBLIC PRODUCTS (IMPORTANT FIX)
+                .requestMatchers("/api/farmer/products/show/products").permitAll()
+
+                // 🔒 FARMER APIs
+                .requestMatchers("/api/farmer/**").hasRole("FARMER")
+
+                // 🔒 BUYER APIs
                 .requestMatchers("/api/buyer/**").hasRole("BUYER")
-                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
 
-                // All other requests need authentication
+                // 🔐 Everything else needs login
                 .anyRequest().authenticated()
-               
             )
+
+            // Google OAuth2 Login
             .oauth2Login(oauth -> oauth
-            	    .loginPage("/oauth2/authorize/google")
-            	    .successHandler(googleSuccessHandler)
-            	)
+                    .loginPage("/oauth2/authorize/google")
+                    .successHandler(googleSuccessHandler)
+            )
 
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            // Stateless Session (JWT)
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            );
 
-        // Add JWT token filter before UsernamePasswordAuthenticationFilter
+        // Add JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 }

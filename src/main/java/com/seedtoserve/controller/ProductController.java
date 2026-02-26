@@ -14,15 +14,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.seedtoserve.dto.ProductDTO;
-import com.seedtoserve.model.Product;
 import com.seedtoserve.service.ProductService;
 
 import jakarta.validation.Valid;
@@ -30,6 +27,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/farmer/products")
+@CrossOrigin(origins = "http://localhost:5173")
 public class ProductController {
 
 	@Autowired
@@ -54,7 +52,7 @@ public class ProductController {
 		        @Valid
 		        @RequestPart("productDto") ProductDTO productDto,
 
-		        @RequestPart(value = "image", required = false)
+		        @RequestPart(value = "imageFile", required = false)
 		        MultipartFile imageFile
 		) {
 		    try {
