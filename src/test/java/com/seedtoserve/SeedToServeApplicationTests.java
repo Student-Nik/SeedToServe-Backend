@@ -8,6 +8,7 @@ class SeedToServeApplicationTests {
 
 	@Test
 	void contextLoads() {
+		
 	}
 
 }

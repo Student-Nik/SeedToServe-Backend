@@ -59,6 +59,8 @@ public class OrderService {
 		Customer customer = customerRepository.findById(orderDto.getCustomerId())
 				.orElseThrow( () -> new RuntimeException("Customer not found!"));
 		
+		System.out.println(customer);
+		
 		// 2. Fetch Address
 		
 		AddressDetails addressDetails = addressRepository.findById((int) orderDto.getAddressId())

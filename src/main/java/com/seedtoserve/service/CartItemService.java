@@ -63,6 +63,7 @@ public class CartItemService {
             }
 
             CartItem cartItem = new CartItem();
+            cartItem.setId(cartItemDto.getId());
             cartItem.setCustomer(customer);
             cartItem.setProduct(product);
             cartItem.setQuantity(cartItemDto.getQuantity());
@@ -92,13 +93,14 @@ public class CartItemService {
             }
 
             return new CartItemResponse(
-                    product.getId(),
-                    product.getName(),
-                    product.getPrice(),
-                    item.getQuantity(),
-                    imageBase64,
-                    product.getPrice() * item.getQuantity()
-            );
+            	    item.getId(),
+            	    product.getId(),
+            	    product.getName(),
+            	    product.getPrice(),
+            	    item.getQuantity(),
+            	    imageBase64,
+            	    product.getPrice() * item.getQuantity()
+            	);
         }).toList();
 
         double totalAmount = items.stream().mapToDouble(CartItemResponse::getSubtotal).sum();
