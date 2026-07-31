@@ -17,7 +17,7 @@ public class ProductDTO {
 	private int id;
 	
 	@NotBlank(message="Product name is Required!")
-	@Size(min = 3, max = 10, message = "Product Name must be between 3 and 10 characters")
+	@Size(min = 3, max = 20, message = "Product Name must be between 3 and 20 characters")
 	private String name;
 	
 	@NotNull(message = "Price is required")

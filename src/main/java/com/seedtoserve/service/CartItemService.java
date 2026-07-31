@@ -1,6 +1,7 @@
 package com.seedtoserve.service;
 
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -81,7 +82,11 @@ public class CartItemService {
 
         List<CartItem> cartItems = cartItemRepository.findByCustomer(customer);
         if (cartItems.isEmpty()) {
-            throw new RuntimeException("Cart is empty");
+            return new CartSummaryDTO(
+                    Collections.emptyList(),
+                    0.0,
+                    0
+            );
         }
 
         List<CartItemResponse> items = cartItems.stream().map(item -> {
