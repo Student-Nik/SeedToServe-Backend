@@ -41,7 +41,7 @@ public class AddressDetailsDTO {
     @Pattern(regexp = "^[1-9][0-9]{5}$", message = "Invalid pincode, must be 6 digits")
     private String pincode;
 
-    @Positive(message = "Customer ID must be a positive number")
+    //@Positive(message = "Customer ID must be a positive number")
     private int customerId;
     
 }

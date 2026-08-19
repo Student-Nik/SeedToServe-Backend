@@ -73,7 +73,7 @@ public class PaymentController {
     }
 
     // Verify Payment
-    @PostMapping("/verify")
+    @PostMapping("/verify-payment")
     public ResponseEntity<?> verifyPayment(@RequestBody VerifyPaymentRequestDto req) {
         try {
             boolean ok = paymentVerificationService.verifyAndMarkPaid(

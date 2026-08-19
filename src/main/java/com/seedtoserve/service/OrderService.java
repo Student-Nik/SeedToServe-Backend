@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -52,91 +53,95 @@ public class OrderService {
 	// Create Order
 	
 	@Transactional
-	public ResponseEntity<String> createOrder(OrderDTO orderDto){
-		
-		// 1. Fetch Customer
-		
-		Customer customer = customerRepository.findById(orderDto.getCustomerId())
-				.orElseThrow( () -> new RuntimeException("Customer not found!"));
-		
-		System.out.println(customer);
-		
-		// 2. Fetch Address
-		
-		AddressDetails addressDetails = addressRepository.findById((int) orderDto.getAddressId())
-				.orElseThrow( () -> new RuntimeException("Address not found!"));
-		
-		// 3. validate address belongs to customer
-		
-		if(!addressDetails.getCustomer().getId().equals(customer.getId())) {
-			throw new RuntimeException("Address does not belong to this customer!");
-		}
-		
-		// 4. Fetch Cart Items
-		
-		List<CartItem> cartItems = cartItemRepository.findByCustomer(customer);
-		if(cartItems.isEmpty()) {
-			throw new RuntimeException("Cart is Empty");
-		}
-		
-		// 5. Create Order
-		
-		Order order = new Order();
-		order.setCustomer(customer);
-		order.setAddressDetails(addressDetails);
-		order.setPaymentMethod(orderDto.getPaymentMethod());
-		order.setOrderDate(LocalDateTime.now());
-		order.setStatus(OrderStatus.PENDING);
-		
-		// totalAmount and orderDetails PENDING
-		
-		double totalAmount = 0.0;
-		
-		// 6. Convert CartItems into OrderItems
-		
-		for(CartItem cartItem : cartItems) {
-			
-			Product product = cartItem.getProduct();
-			
-			 // check stock
+	public ResponseEntity<?> createOrder(OrderDTO orderDto, Customer customer) {
+
+	    // 1. Fetch Address
+	    AddressDetails addressDetails =
+	            addressRepository.findById((int) orderDto.getAddressId())
+	                    .orElseThrow(() ->
+	                            new RuntimeException("Address not found!"));
+
+	    // 2. Validate address belongs to customer
+	    if (!addressDetails.getCustomer().getId().equals(customer.getId())) {
+	        throw new RuntimeException(
+	                "Address does not belong to this customer!"
+	        );
+	    }
+
+	    // 3. Fetch Cart Items
+	    List<CartItem> cartItems =
+	            cartItemRepository.findByCustomer(customer);
+
+	    if (cartItems.isEmpty()) {
+	        throw new RuntimeException("Cart is Empty");
+	    }
+
+	    // 4. Create Order
+	    Order order = new Order();
+
+	    order.setCustomer(customer);
+	    order.setAddressDetails(addressDetails);
+	    order.setPaymentMethod(orderDto.getPaymentMethod());
+	    order.setOrderDate(LocalDateTime.now());
+	    order.setStatus(OrderStatus.PENDING);
+
+	    double totalAmount = 0.0;
+
+	    // 5. Convert CartItems into OrderItems
+	    for (CartItem cartItem : cartItems) {
+
+	        Product product = cartItem.getProduct();
+
+	        // Check stock
 	        if (product.getStock() < cartItem.getQuantity()) {
-	            throw new RuntimeException("Insufficient stock for " + product.getName()+", Available Stock :"+product.getStock());
+	            throw new RuntimeException(
+	                    "Insufficient stock for "
+	                    + product.getName()
+	                    + ", Available Stock: "
+	                    + product.getStock()
+	            );
 	        }
 
-	        // reduce stock
-	        product.setStock(product.getStock() - cartItem.getQuantity());
+	        // Reduce stock
+	        product.setStock(
+	                product.getStock() - cartItem.getQuantity()
+	        );
+
 	        productRepository.save(product);
-	        
-	        // create OrderItem
-	        
+
+	        // Create OrderItem
 	        OrderItem orderItem = new OrderItem();
-	        
+
 	        orderItem.setProduct(product);
 	        orderItem.setQuantity(cartItem.getQuantity());
 	        orderItem.setPrice(product.getPrice());
-	        
-	        // List<OrderItem> items = new ArrayList<>();
-	        // items.add(orderItem);
-	        // order.setOrderItems(items); -> bug : it adds last product only
-	        
+
 	        orderItem.setOrder(order);
+
 	        order.getOrderItems().add(orderItem);
 
-	        totalAmount += product.getPrice() * cartItem.getQuantity();
-	         
-		}
-		
-		order.setTotalAmount(totalAmount);
-		
-		orderRepository.save(order);
-		
-		cartItemRepository.deleteByCustomer(customer);
-		
-		return ResponseEntity.status(HttpStatus.CREATED)
-				.body("Order Created Successfully!");
-	
+	        totalAmount +=
+	                product.getPrice()
+	                * cartItem.getQuantity();
+	    }
+
+	    // 6. Set total
+	    order.setTotalAmount(totalAmount);
+
+	    // 7. Save Order
+	    orderRepository.save(order);
+
+	    // 8. Clear Cart
+	    cartItemRepository.deleteByCustomer(customer);
+
+	    // 9. Return Order ID
+	    return ResponseEntity.ok(
+	            Map.of(
+	                    "message", "Order Created Successfully!",
+	                    "orderId", order.getId()
+	            )
+	    );
 	}
-	
 	// Cancel Order
 	
 	@Transactional

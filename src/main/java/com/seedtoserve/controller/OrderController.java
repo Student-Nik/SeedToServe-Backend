@@ -31,9 +31,9 @@ public class OrderController {
 
     // Create order for logged-in customer
     @PostMapping("/create/order")
-    public ResponseEntity<String> createOrder(@RequestBody OrderDTO orderDto) {
+    public ResponseEntity<?> createOrder(@RequestBody OrderDTO orderDto) {
         Customer customer = customerService.getLoggedInCustomer();
-        return orderService.createOrder(orderDto);
+        return orderService.createOrder(orderDto, customer);
     }
 
     // Cancel order for logged-in customer

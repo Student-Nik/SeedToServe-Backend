@@ -47,6 +47,7 @@ public class ShopService {
                     dto.setName(product.getName());
                     dto.setPrice(product.getPrice());
                     dto.setStock(product.getStock());
+                    dto.setDescription(product.getDescription());
 
                     if (product.getCategory() != null) {
                         dto.setCategoryId(product.getCategory().getId());

@@ -15,37 +15,40 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/customer/address")
 public class AddressController {
 
-    @Autowired
-    private AddressService addressService;
+	@Autowired
+	private AddressService addressService;
 
-    @Autowired
-    private CustomerService customerService;
+	@Autowired
+	private CustomerService customerService;
 
-    // Create Address for logged-in customer
-    @PostMapping("/create")
-    public ResponseEntity<String> createAddress(@Valid @RequestBody AddressDetailsDTO addressDetailsDto) {
-        Customer customer = customerService.getLoggedInCustomer();
-        return addressService.createAddress(addressDetailsDto);
-    }
+	// Create Address for logged-in customer
+	@PostMapping("/create")
+	public ResponseEntity<String> createAddress(@Valid @RequestBody AddressDetailsDTO addressDetailsDto) {
 
-    // Delete Address for logged-in customer
-    @DeleteMapping("/delete")
-    public ResponseEntity<String> deleteAddress() {
-        Customer customer = customerService.getLoggedInCustomer();
-        return addressService.deleteAddress(customer.getId().intValue());
-    }
+		Customer customer = customerService.getLoggedInCustomer();
 
-    // Update Address for logged-in customer
-    @PutMapping("/update")
-    public ResponseEntity<String> updateAddress(@Valid @RequestBody AddressDetailsDTO addressDetailsDto) {
-        Customer customer = customerService.getLoggedInCustomer();
-        return addressService.updateAddress(addressDetailsDto, customer.getId().intValue());
-    }
+		return addressService.createAddress(addressDetailsDto, customer);
+	}
 
-    // Show Address for logged-in customer
-    @GetMapping("/show")
-    public ResponseEntity<?> showAddress() {
-        Customer customer = customerService.getLoggedInCustomer();
-        return addressService.showAddress(customer.getId().intValue());
-    }
+	// Delete Address for logged-in customer
+	@DeleteMapping("/delete")
+	public ResponseEntity<String> deleteAddress() {
+		Customer customer = customerService.getLoggedInCustomer();
+		return addressService.deleteAddress(customer.getId().intValue());
+	}
+
+	// Update Address for logged-in customer
+	@PutMapping("/update")
+	public ResponseEntity<String> updateAddress(@Valid @RequestBody AddressDetailsDTO addressDetailsDto) {
+		Customer customer = customerService.getLoggedInCustomer();
+
+		return addressService.updateAddress(addressDetailsDto, customer.getId().intValue(), customer);
+	}
+
+	// Show Address for logged-in customer
+	@GetMapping("/show")
+	public ResponseEntity<?> showAddress() {
+		Customer customer = customerService.getLoggedInCustomer();
+		return addressService.showAddress(customer.getId().intValue());
+	}
 }
