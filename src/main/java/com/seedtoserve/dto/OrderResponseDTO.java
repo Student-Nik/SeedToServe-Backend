@@ -23,4 +23,5 @@ public class OrderResponseDTO {
     private String shippingAddress;
     private String orderDate;
     private String expectedDeliveryDate;
+    private String paymentMethod;
 }

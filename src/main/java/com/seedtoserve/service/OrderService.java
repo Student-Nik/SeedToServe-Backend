@@ -257,6 +257,7 @@ public class OrderService {
 	        response.setTotalItems(totalItems);
 	        response.setStatus(order.getStatus());
 	        response.setShippingAddress(fullAddress);
+	        response.setPaymentMethod(order.getPaymentMethod());
 
 	        // Order date
 	        response.setOrderDate(order.getOrderDate().format(formatter));
