@@ -69,6 +69,7 @@ public class SecurityConfig {
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/contact/**",
+                        "/api/admin/login",
 
                         // PUBLIC PRODUCTS & CATEGORIES
                         "/api/farmer/products/show/products",

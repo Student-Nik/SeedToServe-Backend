@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import com.seedtoserve.dto.ApiResponse;
 import com.seedtoserve.dto.CustomerDTO;
@@ -25,108 +26,96 @@ import com.seedtoserve.security.JwtUtil;
 @Service
 public class CustomerService {
 
-    @Autowired
-    private CustomerRepository customerRepository;
+	@Autowired
+	private CustomerRepository customerRepository;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+	@Autowired
+	private JwtUtil jwtUtil;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    
-    @Autowired
-    private MailService mailService;
+	@Autowired
+	private AuthenticationManager authenticationManager;
 
-    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+	@Autowired
+	private MailService mailService;
 
-    
-    // Register
-    public ResponseEntity<Map<String, Object>> registerUser(CustomerDTO customerDto) {
+	private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    	// Check duplicate email
-        if (customerRepository.findByEmail(customerDto.getEmail()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "This E-mail already exists, please try another one!"));
-        }
+	// Register
+	public ResponseEntity<Map<String, Object>> registerUser(CustomerDTO customerDto) {
 
-        // Check password match
-        if (!customerDto.getPassword().equals(customerDto.getConfirmPassword())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Password and Confirm Password do not match!"));
-        }
+		// Check duplicate email
+		if (customerRepository.findByEmail(customerDto.getEmail()).isPresent()) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("message", "This E-mail already exists, please try another one!"));
+		}
 
-        // Map DTO to Entity
-        Customer customer = new Customer();
-        customer.setRegistrationType(customerDto.getRegistrationType());
-        customer.setFirstName(customerDto.getFirstName());
-        customer.setLastName(customerDto.getLastName());
-        customer.setEmail(customerDto.getEmail());
-        customer.setPassword(passwordEncoder.encode(customerDto.getPassword()));
+		// Check password match
+		if (!customerDto.getPassword().equals(customerDto.getConfirmPassword())) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("message", "Password and Confirm Password do not match!"));
+		}
 
-        // 4️ Save Customer
-        customerRepository.save(customer);
+		// Map DTO to Entity
+		Customer customer = new Customer();
+		customer.setRegistrationType(customerDto.getRegistrationType());
+		customer.setFirstName(customerDto.getFirstName());
+		customer.setLastName(customerDto.getLastName());
+		customer.setEmail(customerDto.getEmail());
+		customer.setPassword(passwordEncoder.encode(customerDto.getPassword()));
 
-        // 5️ Prepare full name for email
-        String fullName = customer.getFirstName() + " " + customer.getLastName();
+		// 4️ Save Customer
+		customerRepository.save(customer);
 
-        // 6️ Send email based on role
-        mailService.sendAndLogEmail(customer.getEmail(), fullName, customer.getRegistrationType());
+		// 5️ Prepare full name for email
+		String fullName = customer.getFirstName() + " " + customer.getLastName();
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of(
-                    "message", "Customer registration successful and email sent!",
-                    "registrationType", customer.getRegistrationType()
-                ));
+		// 6️ Send email based on role
+		mailService.sendAndLogEmail(customer.getEmail(), fullName, customer.getRegistrationType());
 
-    }
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(Map.of("message", "Customer registration successful and email sent!", "registrationType",
+						customer.getRegistrationType()));
 
-    // Login 
-    public ResponseEntity<ApiResponse<JwtLoginResponse>> loginUser(LoginRequest loginRequest) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
+	}
 
-            Customer customer = customerRepository
-                    .findByEmail(loginRequest.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+	// Login
+	public ResponseEntity<ApiResponse<JwtLoginResponse>> loginUser(LoginRequest loginRequest) {
+		try {
+			authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
-            CustomerUserDetails userDetails = new CustomerUserDetails(customer);
+			Customer customer = customerRepository.findByEmail(loginRequest.getEmail())
+					.orElseThrow(() -> new RuntimeException("User not found"));
 
-            String token = jwtUtil.createToken(userDetails.getUsername());
+			CustomerUserDetails userDetails = new CustomerUserDetails(customer);
 
-            JwtLoginResponse jwtResponse = new JwtLoginResponse();
-            jwtResponse.setToken(token);
-            jwtResponse.setUsername(customer.getEmail());
-            jwtResponse.setRole(customer.getRegistrationType().toUpperCase());
+			String token = jwtUtil.createToken(userDetails.getUsername());
 
-            return ResponseEntity.ok(
-                    new ApiResponse<>(
-                            true,
-                            "Login successful!",
-                            jwtResponse
-                    )
-            );
+			JwtLoginResponse jwtResponse = new JwtLoginResponse();
+			jwtResponse.setToken(token);
+			jwtResponse.setUsername(customer.getEmail());
+			jwtResponse.setRole(customer.getRegistrationType().toUpperCase());
 
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ApiResponse<>(
-                            false,
-                            "Invalid Credentials!",
-                            null
-                    ));
-        }
-    }
+			return ResponseEntity.ok(new ApiResponse<>(true, "Login successful!", jwtResponse));
 
-    
+		} catch (BadCredentialsException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new ApiResponse<>(false, "Invalid Credentials!", null));
+		}
+	}
 
-    public Customer getLoggedInCustomer() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();  // Extracted from JWT
-        return customerRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Customer not found for email: " + email));
-    }
+	// Get Logged in customer
+	public Customer getLoggedInCustomer() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String email = authentication.getName(); // Extracted from JWT
+		return customerRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("Customer not found for email: " + email));
+	}
+
+	// Logout
+	@PostMapping("/logout")
+	public ResponseEntity<?> logout() {
+		return ResponseEntity.ok("Logout successful");
+	}
+
 }
