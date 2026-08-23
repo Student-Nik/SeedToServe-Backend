@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import com.seedtoserve.dto.AdminLoginRequest;
 import com.seedtoserve.dto.AdminLoginResponse;
+import com.seedtoserve.dto.AdminProfileResponse;
 import com.seedtoserve.model.Admin;
 import com.seedtoserve.repository.AdminRepository;
 import com.seedtoserve.security.JwtUtil;
@@ -34,9 +35,17 @@ public class AdminService {
 			throw new RuntimeException("Invalid email or password");
 		}
 
-		String token = jwtUtil.createToken(admin.getEmail());
+		String token = jwtUtil.createAdminToken(admin.getEmail(), "ADMIN");
 
 		return new AdminLoginResponse(token, admin.getId(), admin.getEmail(), "ADMIN");
+	}
+
+	// Admin Profile
+	public AdminProfileResponse getProfile(String email) {
+
+		Admin admin = adminRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Admin not found"));
+
+		return new AdminProfileResponse(admin.getId(), admin.getEmail(), admin.getStatus());
 	}
 
 }

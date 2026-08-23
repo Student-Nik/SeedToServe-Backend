@@ -36,6 +36,23 @@ public class JwtUtil {
         System.out.println("Generated Token: " + token);
         return token;
     }
+    
+    public String createAdminToken(String username, String role) {
+
+        String token = Jwts.builder()
+                .subject(username)
+                .claim("role", role)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(
+                        System.currentTimeMillis() + TOKEN_EXPIRY_DURATION
+                ))
+                .signWith(getSecretKey())
+                .compact();
+
+        System.out.println("Generated Token: " + token);
+
+        return token;
+    }
 
     // Extract username from the token
     public String getUsernameFromToken(String token) {
@@ -66,4 +83,16 @@ public class JwtUtil {
         System.out.println("Username from token: " + usernameFromToken);
         return usernameFromToken.equalsIgnoreCase(username) && !isTokenExpired(token);
     }
+    
+    public String getRoleFromToken(String token) {
+
+        return Jwts.parser()
+                .verifyWith(getSecretKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("role", String.class);
+    }
+    
+    
 }
