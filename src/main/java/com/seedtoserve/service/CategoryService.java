@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 
 import com.seedtoserve.dto.CategoryDTO;
 import com.seedtoserve.model.Category;
+import com.seedtoserve.model.Customer;
 import com.seedtoserve.repository.CategoryRepository;
+import com.seedtoserve.repository.CustomerRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -24,90 +26,113 @@ public class CategoryService {
 	@Autowired
 	private CategoryRepository categoryRepository; 
 	
+	@Autowired
+	private CustomerService customerService;
+	
 	// Add a Category
 	
-	public ResponseEntity<Map<String, Object>> addCategory(CategoryDTO categoryDto){
-		
-		Optional<Category> isExistingCategory = categoryRepository.findByName(categoryDto.getName());
-		
-		if(isExistingCategory.isPresent()) {
-			return ResponseEntity.status(HttpStatus.CONFLICT)
+	public ResponseEntity<Map<String, Object>> addCategory(CategoryDTO categoryDto) {
+
+	    Customer customer = customerService.getLoggedInCustomer();
+
+	    Optional<Category> existingCategory =
+	            categoryRepository.findByNameAndCustomerId(
+	                    categoryDto.getName(),
+	                    customer.getId()
+	            );
+
+	    if (existingCategory.isPresent()) {
+	        return ResponseEntity.status(HttpStatus.CONFLICT)
 	                .body(Map.of(
 	                        "message", "This category already exists!"
 	                ));
-		}else {
-			Category category = new Category();
-			category.setName(categoryDto.getName());
-			category.setDescription(categoryDto.getDescription());
-			
-			categoryRepository.save(category);
-			
-			return ResponseEntity.status(HttpStatus.OK)
-	                .body(Map.of(
-	                        "message", "Category added successfully!",
-	                        "category", categoryDto
-	                ));
-		}
+	    }
+
+	    Category category = new Category();
+
+	    category.setName(categoryDto.getName());
+	    category.setDescription(categoryDto.getDescription());
+	    category.setCustomer(customer);
+
+	    categoryRepository.save(category);
+
+	    return ResponseEntity.status(HttpStatus.CREATED)
+	            .body(Map.of(
+	                    "message", "Category added successfully!",
+	                    "category", category
+	            ));
 	}
 	
 	// Delete Category
 	
 	@Transactional
-	@Modifying
-	public ResponseEntity<String> deleteCategory(String name){
-		
-		Optional<Category> isExistingCategory = categoryRepository.findByName(name);
-		
-		if(isExistingCategory.isPresent()) {
-			categoryRepository.deleteByName(name);
-			return ResponseEntity.status(HttpStatus.ACCEPTED)
-					  .body("Category deleted Succesfully!");
-		}else {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body("Category not Found!");
-		}
+	public ResponseEntity<String> deleteCategory(String name) {
+
+	    Customer customer = customerService.getLoggedInCustomer();
+
+	    Optional<Category> existingCategory =
+	            categoryRepository.findByNameAndCustomerId(
+	                    name,
+	                    customer.getId()
+	            );
+
+	    if (existingCategory.isEmpty()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+	                .body("Category not found!");
+	    }
+
+	    categoryRepository.deleteByNameAndCustomerId(
+	            name,
+	            customer.getId()
+	    );
+
+	    return ResponseEntity.status(HttpStatus.ACCEPTED)
+	            .body("Category deleted successfully!");
 	}
 	
 	// Update Category : Re-assign the values.
 
 	@Transactional
-	public ResponseEntity<Map<String,Object>> updateCategory(CategoryDTO categoryDto, String name) {
-		
-		Optional<Category> isExistingCategory = categoryRepository.findByName(name);
-		
-		if(isExistingCategory.isPresent()) {
-		
-			Category category = isExistingCategory.get();
-			
-			category.setName(categoryDto.getName());
-			category.setDescription(categoryDto.getDescription());
-			
-			categoryRepository.save(category);
-			
-			return ResponseEntity.status(HttpStatus.OK)
+	public ResponseEntity<Map<String, Object>> updateCategory(
+	        CategoryDTO categoryDto,
+	        String name) {
+
+	    Customer customer = customerService.getLoggedInCustomer();
+
+	    Optional<Category> existingCategory =
+	            categoryRepository.findByNameAndCustomerId(
+	                    name,
+	                    customer.getId()
+	            );
+
+	    if (existingCategory.isEmpty()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND)
 	                .body(Map.of(
-	                        "message", "Category updated successfully!",
-	                        "category", categoryDto
+	                        "message", "Category not found!"
 	                ));
-		}
-		
-		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+	    }
+
+	    Category category = existingCategory.get();
+
+	    category.setName(categoryDto.getName());
+	    category.setDescription(categoryDto.getDescription());
+
+	    categoryRepository.save(category);
+
+	    return ResponseEntity.status(HttpStatus.OK)
 	            .body(Map.of(
-	                    "message", "Category not found!"
+	                    "message", "Category updated successfully!",
+	                    "category", category
 	            ));
 	}
 	
 	// Show Categories
 	
 	public List<Category> showCategories() {
-		
-		// Here, it exposes all records of the table.
-		// return categoryRepository.findAll();
-		
-		// Use DTO to return only those records you need.
-		
-		return categoryRepository.findAll();
-		
+
+	    Customer customer = customerService.getLoggedInCustomer();
+
+	    return categoryRepository.findByCustomerId(customer.getId());
 	}
 	
 	

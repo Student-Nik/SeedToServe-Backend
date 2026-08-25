@@ -1,7 +1,11 @@
 package com.seedtoserve.controller;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +21,8 @@ public class ShopController {
 	@Autowired
 	private ShopService shopService;
 	
+	
+	
 	// Fetching all products from database in shop 
 	
 	/*
@@ -30,8 +36,16 @@ public class ShopController {
 	//        VEGETABLES -> ALL PRODUCTS UNDER VEGETABLES CATEGORY
 	
 	@GetMapping("/buy/products")
-	public Map<String, List<ProductDTO>> getProductsByCategory() {
-	    return shopService.showAllProducts();
+	public Map<String, List<ProductDTO>> showAllProducts() {
+
+	    return shopService.showShopProducts()
+	            .stream()
+	            .sorted(Comparator.comparing(ProductDTO::getName))
+	            .collect(Collectors.groupingBy(
+	                    ProductDTO::getCategoryName,
+	                    TreeMap::new,
+	                    Collectors.toList()
+	            ));
 	}
 	
 	// TreeMap

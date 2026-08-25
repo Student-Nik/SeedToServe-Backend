@@ -34,4 +34,8 @@ public class Product {
 	private Category category;
 	
 	private String description;
+	
+	@ManyToOne
+	@JoinColumn(name = "customer_id")
+	private Customer customer;
 }

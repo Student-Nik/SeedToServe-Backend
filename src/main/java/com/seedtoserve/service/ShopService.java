@@ -18,52 +18,66 @@ import com.seedtoserve.repository.ProductRepository;
 public class ShopService {
 
 	@Autowired
-	private ProductService productService;
-	
-	@Autowired
 	private ProductRepository productRepository;
-	
-	// Show all products by category wise
-	
-	public Map<String, List<ProductDTO>> showAllProducts(){
-		return productService.showProducts()
-	            .stream()
-	            // sort by product name inside category
-	            .sorted(Comparator.comparing(ProductDTO::getName)) 
-	            .collect(Collectors.groupingBy(
-	                    ProductDTO::getCategoryName,
-	                    TreeMap::new, // TreeMap keeps categories sorted alphabetically
-	                    Collectors.toList()
-	            ));
+
+	// Show all products in Shop
+	public List<ProductDTO> showShopProducts() {
+
+		return productRepository.findAll().stream().map(product -> {
+
+			ProductDTO dto = new ProductDTO();
+
+			dto.setId(product.getId());
+			dto.setName(product.getName());
+			dto.setPrice(product.getPrice());
+			dto.setStock(product.getStock());
+			dto.setDescription(product.getDescription());
+
+			if (product.getCategory() != null) {
+				dto.setCategoryId(product.getCategory().getId());
+				dto.setCategoryName(product.getCategory().getName());
+			}
+
+			// Convert image to Base64
+			if (product.getImage() != null && product.getImage().length > 0) {
+
+				String base64Image = Base64.getEncoder().encodeToString(product.getImage());
+
+				dto.setImageBase64("data:image/jpeg;base64," + base64Image);
+			}
+
+			return dto;
+		}).toList();
 	}
-	
+
 	// Fetch Individual product
-	
-	public ResponseEntity<ProductDTO> showIndividualProduct(int id){
-		return productRepository.findById(id)
-				.map(product -> {
-					ProductDTO dto = new ProductDTO();
-                    dto.setId(product.getId());
-                    dto.setName(product.getName());
-                    dto.setPrice(product.getPrice());
-                    dto.setStock(product.getStock());
-                    dto.setDescription(product.getDescription());
 
-                    if (product.getCategory() != null) {
-                        dto.setCategoryId(product.getCategory().getId());
-                        dto.setCategoryName(product.getCategory().getName());
-                    }
+	public ResponseEntity<ProductDTO> showIndividualProduct(int id) {
 
-                    // Convert image to Base64
-                    if (product.getImage() != null && product.getImage().length > 0) {
-                        String base64Image = Base64.getEncoder().encodeToString(product.getImage());
-                        dto.setImageBase64("data:image/jpeg;base64," + base64Image);
-                    }
+		return productRepository.findById(id).map(product -> {
 
-                    return ResponseEntity.ok(dto);
-				})
-				.orElseGet(()-> ResponseEntity.notFound().build());
+			ProductDTO dto = new ProductDTO();
 
+			dto.setId(product.getId());
+			dto.setName(product.getName());
+			dto.setPrice(product.getPrice());
+			dto.setStock(product.getStock());
+			dto.setDescription(product.getDescription());
+
+			if (product.getCategory() != null) {
+				dto.setCategoryId(product.getCategory().getId());
+				dto.setCategoryName(product.getCategory().getName());
+			}
+
+			if (product.getImage() != null && product.getImage().length > 0) {
+
+				String base64Image = Base64.getEncoder().encodeToString(product.getImage());
+
+				dto.setImageBase64("data:image/jpeg;base64," + base64Image);
+			}
+
+			return ResponseEntity.ok(dto);
+		}).orElseGet(() -> ResponseEntity.notFound().build());
 	}
-	
+
 }
