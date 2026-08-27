@@ -54,7 +54,7 @@ public class PaymentController {
 
             // Save Razorpay Order ID and status
             order.setRazorpayOrderId(dto.getRazorpayOrderId());
-            order.setStatus(OrderStatus.CREATED);  // ✅ Fixed: use enum directly
+            order.setOrderStatus(OrderStatus.PLACED); // ✅ Fixed: use enum directly
             orderRepository.save(order);
 
             Map<String, Object> response = new HashMap<>();

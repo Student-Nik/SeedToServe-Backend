@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.seedtoserve.enums.OrderStatus;
+import com.seedtoserve.enums.PaymentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,7 +20,8 @@ public class OrderResponseDTO {
     private List<OrderItemDTO> items;
     private double totalAmount;
     private double totalItems;
-    private OrderStatus status;
+    private OrderStatus orderStatus;
+    private PaymentStatus paymentStatus;
     private String shippingAddress;
     private String orderDate;
     private String expectedDeliveryDate;

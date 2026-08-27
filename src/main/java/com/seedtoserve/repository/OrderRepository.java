@@ -22,13 +22,13 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 	Optional<Order> findByRazorpayOrderId(String razorpayOrderId);
 
 	// Count orders by status
-	long countByStatus(OrderStatus status);
+	long countByOrderStatus(OrderStatus orderStatus);
 
 	// Calculate revenue by status
 	@Query("""
-			    SELECT COALESCE(SUM(o.totalAmount), 0)
-			    FROM Order o
-			    WHERE o.status = :status
-			""")
-	Double getTotalRevenueByStatus(@Param("status") OrderStatus status);
+		    SELECT COALESCE(SUM(o.totalAmount), 0)
+		    FROM Order o
+		    WHERE o.orderStatus = :status
+		""")
+		Double getTotalRevenueByStatus(OrderStatus status);
 }

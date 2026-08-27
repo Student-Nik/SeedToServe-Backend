@@ -1,6 +1,7 @@
 package com.seedtoserve.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -8,9 +9,11 @@ import org.springframework.stereotype.Service;
 import com.seedtoserve.dto.AdminDashboardResponse;
 import com.seedtoserve.dto.AdminLoginRequest;
 import com.seedtoserve.dto.AdminLoginResponse;
+import com.seedtoserve.dto.AdminOrderResponse;
 import com.seedtoserve.dto.AdminProfileResponse;
 import com.seedtoserve.enums.OrderStatus;
 import com.seedtoserve.model.Admin;
+import com.seedtoserve.model.Order;
 import com.seedtoserve.repository.AdminRepository;
 import com.seedtoserve.repository.CustomerRepository;
 import com.seedtoserve.repository.OrderRepository;
@@ -68,11 +71,11 @@ public class AdminService {
 
 		long totalOrders = orderRepository.count();
 
-		long pendingOrders = orderRepository.countByStatus(OrderStatus.PENDING);
+		long pendingOrders = orderRepository.countByOrderStatus(OrderStatus.PENDING);
 
-		long completedOrders = orderRepository.countByStatus(OrderStatus.DELIVERED);
+		long completedOrders = orderRepository.countByOrderStatus(OrderStatus.DELIVERED);
 
-		long cancelledOrders = orderRepository.countByStatus(OrderStatus.CANCELLED);
+		long cancelledOrders = orderRepository.countByOrderStatus(OrderStatus.CANCELLED);
 
 		Double revenue = orderRepository.getTotalRevenueByStatus(OrderStatus.DELIVERED);
 
@@ -80,6 +83,18 @@ public class AdminService {
 
 		return new AdminDashboardResponse(totalBuyers, totalFarmers, totalProducts, totalOrders, pendingOrders,
 				completedOrders, cancelledOrders, totalRevenue);
+	}
+
+	// Show orders placed by buyers to admin
+	public List<AdminOrderResponse> getAllOrdersForAdmin() {
+
+		List<Order> orders = orderRepository.findAll();
+
+		return orders.stream()
+				.map(order -> new AdminOrderResponse(order.getId(), order.getCustomer().getFirstName(),
+						order.getTotalAmount(), order.getPaymentMethod(), order.getOrderStatus(),
+						order.getPaymentStatus(), order.getOrderDate()))
+				.toList();
 	}
 
 }

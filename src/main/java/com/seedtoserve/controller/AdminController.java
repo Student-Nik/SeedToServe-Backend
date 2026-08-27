@@ -1,5 +1,7 @@
 package com.seedtoserve.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.seedtoserve.dto.AdminDashboardResponse;
 import com.seedtoserve.dto.AdminLoginRequest;
 import com.seedtoserve.dto.AdminLoginResponse;
+import com.seedtoserve.dto.AdminOrderResponse;
 import com.seedtoserve.dto.AdminProfileResponse;
 import com.seedtoserve.service.AdminService;
 
@@ -40,5 +43,11 @@ public class AdminController {
 	@GetMapping("/dashboard")
 	public ResponseEntity<AdminDashboardResponse> getDashboard() {
 		return ResponseEntity.ok(adminService.getDashboard());
+	}
+
+	// Admin can see all orders placed by buyers.
+	@GetMapping("/orders")
+	public ResponseEntity<List<AdminOrderResponse>> getAllOrders() {
+		return ResponseEntity.ok(adminService.getAllOrdersForAdmin());
 	}
 }

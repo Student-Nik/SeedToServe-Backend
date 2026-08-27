@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.seedtoserve.enums.OrderStatus;
+import com.seedtoserve.enums.PaymentStatus;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -39,7 +40,11 @@ public class Order {
     private Customer customer;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus status;
+    private PaymentStatus paymentStatus;
+
+    // Order / delivery information
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus;
 
     private LocalDateTime orderDate;
 
@@ -52,4 +57,8 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItem> orderItems = new ArrayList<>();
+    
+    // Delivery boy assigned by admin
+    //@ManyToOne
+    //private DeliveryBoy deliveryBoy;
 }

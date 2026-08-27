@@ -17,6 +17,7 @@ import com.seedtoserve.dto.OrderDTO;
 import com.seedtoserve.dto.OrderItemDTO;
 import com.seedtoserve.dto.OrderResponseDTO;
 import com.seedtoserve.enums.OrderStatus;
+import com.seedtoserve.enums.PaymentStatus;
 import com.seedtoserve.model.AddressDetails;
 import com.seedtoserve.model.CartItem;
 import com.seedtoserve.model.Customer;
@@ -83,7 +84,10 @@ public class OrderService {
 	    order.setAddressDetails(addressDetails);
 	    order.setPaymentMethod(orderDto.getPaymentMethod());
 	    order.setOrderDate(LocalDateTime.now());
-	    order.setStatus(OrderStatus.PENDING);
+	    order.setOrderStatus(OrderStatus.PLACED);
+	    order.setPaymentStatus(PaymentStatus.PENDING);
+	    
+	    // order.setDeliveryBoy();
 
 	    double totalAmount = 0.0;
 
@@ -160,7 +164,7 @@ public class OrderService {
 		
 		// check status 
 		
-		if(order.getStatus() == OrderStatus.SHIPPED || order.getStatus() == OrderStatus.DELIVERED) {
+		if(order.getOrderStatus() == OrderStatus.SHIPPED || order.getOrderStatus() == OrderStatus.DELIVERED) {
 			throw new RuntimeException("Order already shipped/delivered. Cannot cancel!");
 		}
 		
@@ -173,11 +177,11 @@ public class OrderService {
 		}
 		
 		// refund (only if paid) 
-		if (order.getStatus() == OrderStatus.PAID) {
+		if (order.getOrderStatus() == OrderStatus.PAID) {
 			// Call Razorpay refund API here. Payment Integration pending
 		}
 		
-		order.setStatus(OrderStatus.CANCELLED);
+		order.setOrderStatus(OrderStatus.CANCELLED);
 		orderRepository.save(order);
 		return ResponseEntity.status(HttpStatus.OK)
 				.body("Order Cancelled Successfully!");
@@ -255,15 +259,16 @@ public class OrderService {
 	        response.setItems(itemDTOs);
 	        response.setTotalAmount(totalAmount);
 	        response.setTotalItems(totalItems);
-	        response.setStatus(order.getStatus());
+	        response.setPaymentStatus(order.getPaymentStatus());
+	        response.setOrderStatus(order.getOrderStatus());
 	        response.setShippingAddress(fullAddress);
 	        response.setPaymentMethod(order.getPaymentMethod());
 
 	        // Order date
 	        response.setOrderDate(order.getOrderDate().format(formatter));
 
-	        // Expected delivery date = 7 days after order date
-	        response.setExpectedDeliveryDate(order.getOrderDate().plusDays(7).format(formatter));
+	        // Expected delivery date = 1 days after order date
+	        response.setExpectedDeliveryDate(order.getOrderDate().plusDays(1).format(formatter));
 
 	        return response;
 

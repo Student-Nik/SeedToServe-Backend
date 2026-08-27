@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.seedtoserve.enums.OrderStatus;
+import com.seedtoserve.enums.PaymentStatus;
 import com.seedtoserve.model.Order;
 import com.seedtoserve.model.Payment;
 import com.seedtoserve.repository.OrderRepository;
@@ -49,7 +50,7 @@ public class PaymentVerificationService {
         Order order = orderRepository.findByRazorpayOrderId(razorpayOrderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        order.setStatus(OrderStatus.PAID);  
+        order.setPaymentStatus(PaymentStatus.PAID);  
         orderRepository.save(order);
         
      // 3️ Update payment table
