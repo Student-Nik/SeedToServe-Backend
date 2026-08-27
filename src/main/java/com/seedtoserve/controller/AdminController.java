@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.seedtoserve.dto.AdminDashboardResponse;
 import com.seedtoserve.dto.AdminLoginRequest;
 import com.seedtoserve.dto.AdminLoginResponse;
+import com.seedtoserve.dto.AdminOrderDetailsResponse;
 import com.seedtoserve.dto.AdminOrderResponse;
 import com.seedtoserve.dto.AdminProfileResponse;
 import com.seedtoserve.service.AdminService;
@@ -49,5 +51,12 @@ public class AdminController {
 	@GetMapping("/orders")
 	public ResponseEntity<List<AdminOrderResponse>> getAllOrders() {
 		return ResponseEntity.ok(adminService.getAllOrdersForAdmin());
+	}
+
+	// Admin gets a particular order
+	@GetMapping("/orders/{orderId}")
+	public ResponseEntity<AdminOrderDetailsResponse> getOrderDetails(@PathVariable int orderId) {
+		AdminOrderDetailsResponse response = adminService.getOrderDetailsForAdmin(orderId);
+		return ResponseEntity.ok(response);
 	}
 }

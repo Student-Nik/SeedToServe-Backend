@@ -9,9 +9,13 @@ import org.springframework.stereotype.Service;
 import com.seedtoserve.dto.AdminDashboardResponse;
 import com.seedtoserve.dto.AdminLoginRequest;
 import com.seedtoserve.dto.AdminLoginResponse;
+import com.seedtoserve.dto.AdminOrderDetailsResponse;
+import com.seedtoserve.dto.AdminOrderItemResponse;
 import com.seedtoserve.dto.AdminOrderResponse;
 import com.seedtoserve.dto.AdminProfileResponse;
+import com.seedtoserve.dto.BuyerAddressForAdminResponse;
 import com.seedtoserve.enums.OrderStatus;
+import com.seedtoserve.model.AddressDetails;
 import com.seedtoserve.model.Admin;
 import com.seedtoserve.model.Order;
 import com.seedtoserve.repository.AdminRepository;
@@ -95,6 +99,35 @@ public class AdminService {
 						order.getTotalAmount(), order.getPaymentMethod(), order.getOrderStatus(),
 						order.getPaymentStatus(), order.getOrderDate()))
 				.toList();
+	}
+
+	// Admin gets a particular order
+	public AdminOrderDetailsResponse getOrderDetailsForAdmin(int orderId) {
+
+		Order order = orderRepository.findById(orderId)
+				.orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+		List<AdminOrderItemResponse> items = order.getOrderItems().stream()
+				.map(item -> new AdminOrderItemResponse(item.getProduct().getName(), item.getProduct().getImage(),
+						item.getQuantity(), item.getPrice()))
+				.toList();
+
+		AddressDetails address = order.getAddressDetails();
+
+		BuyerAddressForAdminResponse addressResponse =
+		        new BuyerAddressForAdminResponse(
+		                address.getFullName(),
+		                address.getMobileNo(),
+		                address.getHouseNoOrStreet(),
+		                address.getVillageOrTown(),
+		                address.getDistrict(),
+		                address.getState(),
+		                address.getPincode()
+		        );
+
+		return new AdminOrderDetailsResponse(order.getId(), order.getCustomer().getFirstName(), order.getTotalAmount(),
+				order.getPaymentMethod(), order.getPaymentStatus(), order.getOrderStatus(), order.getOrderDate(),
+				addressResponse, items);
 	}
 
 }
