@@ -1,13 +1,19 @@
 package com.seedtoserve.service;
 
+import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.seedtoserve.dto.DeliveryBoyForAdminResponse;
+import com.seedtoserve.dto.DeliveryBoyLoginRequest;
+import com.seedtoserve.dto.DeliveryBoyLoginResponse;
 import com.seedtoserve.dto.DeliveryBoyRequest;
 import com.seedtoserve.model.DeliveryBoy;
 import com.seedtoserve.repository.DeliveryBoyRepository;
+import com.seedtoserve.security.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +24,9 @@ public class DeliveryBoyService {
 	private final DeliveryBoyRepository deliveryBoyRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final DeliveryBoyEmailService deliveryBoyEmailService;
+	private final JwtUtil jwtUtil;
 	
+	// Create Delivery Boy
 	public DeliveryBoy createDeliveryBoy(DeliveryBoyRequest deliveryBoyRequest) {
 
         if (deliveryBoyRepository.existsByEmail(deliveryBoyRequest.getEmail())) {
@@ -50,4 +58,47 @@ public class DeliveryBoyService {
                 .toString()
                 .substring(0, 8);
     }
+    
+    // Delivery Boy Login
+    public ResponseEntity<?> login(DeliveryBoyLoginRequest request) {
+
+        DeliveryBoy deliveryBoy = deliveryBoyRepository
+                .findByEmail(request.getEmail())
+                .orElseThrow(() ->
+                        new RuntimeException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                deliveryBoy.getPassword())) {
+
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        String token = jwtUtil.createAdminToken(
+                deliveryBoy.getEmail(),
+                "DELIVERY_BOY"
+        );
+
+        DeliveryBoyLoginResponse response =
+                new DeliveryBoyLoginResponse(
+                        "Delivery Boy Login Successful",
+                        token,
+                        deliveryBoy.getId(),
+                        deliveryBoy.getFirstName(),
+                        deliveryBoy.getLastName(),
+                        deliveryBoy.getEmail()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+    
+ // Show all delivery boy's
+ 	public List<DeliveryBoyForAdminResponse> getAllDeliveryBoys() {
+
+ 		return deliveryBoyRepository.findAll().stream()
+ 				.map(deliveryBoy -> new DeliveryBoyForAdminResponse(deliveryBoy.getId(), deliveryBoy.getFirstName(),
+ 						deliveryBoy.getLastName(), deliveryBoy.getMobileNo(), deliveryBoy.getEmail(),
+ 						deliveryBoy.isAvailable()))
+ 				.toList();
+ 	}
 }

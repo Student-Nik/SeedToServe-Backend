@@ -75,6 +75,8 @@ public class SecurityConfig {
                         "/api/farmer/products/show/products",
                         "/api/farmer/categories/show/categories"
                 ).permitAll()
+                
+                .requestMatchers("/api/delivery/boy/login").permitAll()
 
                 // 🔒 FARMER APIs
                 .requestMatchers("/api/farmer/**").hasRole("FARMER")
