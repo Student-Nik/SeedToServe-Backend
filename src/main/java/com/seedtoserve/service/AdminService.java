@@ -2,7 +2,9 @@ package com.seedtoserve.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +19,16 @@ import com.seedtoserve.dto.BuyerAddressForAdminResponse;
 import com.seedtoserve.enums.OrderStatus;
 import com.seedtoserve.model.AddressDetails;
 import com.seedtoserve.model.Admin;
+import com.seedtoserve.model.DeliveryBoy;
 import com.seedtoserve.model.Order;
 import com.seedtoserve.repository.AdminRepository;
 import com.seedtoserve.repository.CustomerRepository;
+import com.seedtoserve.repository.DeliveryBoyRepository;
 import com.seedtoserve.repository.OrderRepository;
 import com.seedtoserve.repository.ProductRepository;
 import com.seedtoserve.security.JwtUtil;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -37,6 +42,8 @@ public class AdminService {
 	private final CustomerRepository customerRepository;
 	private final ProductRepository productRepository;
 	private final OrderRepository orderRepository;
+	private final DeliveryBoyRepository deliveryBoyRepository;
+	private final DeliveryBoyEmailService deliveryBoyEmailService;
 
 	// Admin Log in
 	public AdminLoginResponse login(AdminLoginRequest request) {
@@ -114,20 +121,66 @@ public class AdminService {
 
 		AddressDetails address = order.getAddressDetails();
 
-		BuyerAddressForAdminResponse addressResponse =
-		        new BuyerAddressForAdminResponse(
-		                address.getFullName(),
-		                address.getMobileNo(),
-		                address.getHouseNoOrStreet(),
-		                address.getVillageOrTown(),
-		                address.getDistrict(),
-		                address.getState(),
-		                address.getPincode()
-		        );
+		BuyerAddressForAdminResponse addressResponse = new BuyerAddressForAdminResponse(address.getFullName(),
+				address.getMobileNo(), address.getHouseNoOrStreet(), address.getVillageOrTown(), address.getDistrict(),
+				address.getState(), address.getPincode());
 
 		return new AdminOrderDetailsResponse(order.getId(), order.getCustomer().getFirstName(), order.getTotalAmount(),
 				order.getPaymentMethod(), order.getPaymentStatus(), order.getOrderStatus(), order.getOrderDate(),
 				addressResponse, items);
+	}
+
+	// Assign Delivery boy
+	@Transactional
+	public ResponseEntity<?> assignDeliveryBoy(int orderId, int deliveryBoyId) {
+
+	    Order order = orderRepository.findById(orderId)
+	            .orElseThrow(() ->
+	                    new RuntimeException("Order not found"));
+
+	    DeliveryBoy deliveryBoy = deliveryBoyRepository.findById(deliveryBoyId)
+	            .orElseThrow(() ->
+	                    new RuntimeException("Delivery boy not found"));
+
+	    // Check availability
+	    if (!deliveryBoy.isAvailable()) {
+	        throw new RuntimeException(
+	                "Delivery boy is currently not available");
+	    }
+
+	    // Check whether order is already assigned
+	    if (order.getDeliveryBoy() != null) {
+	        throw new RuntimeException(
+	                "A delivery boy is already assigned to this order");
+	    }
+
+	    // Assign delivery boy
+	    order.setDeliveryBoy(deliveryBoy);
+
+	    // Update order status
+	    order.setOrderStatus(OrderStatus.ASSIGNED);
+
+	    // Delivery boy is now busy
+	    deliveryBoy.setAvailable(false);
+
+	    // Save changes
+	    orderRepository.save(order);
+	    deliveryBoyRepository.save(deliveryBoy);
+
+	    // Send email after successful database update
+	    deliveryBoyEmailService.sendOrderAssignmentEmail(
+	            deliveryBoy,
+	            order
+	    );
+
+	    return ResponseEntity.ok(
+	            Map.of(
+	                    "message", "Delivery boy assigned successfully",
+	                    "orderId", order.getId(),
+	                    "deliveryBoyId", deliveryBoy.getId(),
+	                    "orderStatus", order.getOrderStatus()
+	            )
+	    );
 	}
 
 }

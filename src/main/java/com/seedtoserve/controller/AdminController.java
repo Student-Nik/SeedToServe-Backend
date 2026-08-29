@@ -1,12 +1,14 @@
 package com.seedtoserve.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -58,5 +60,15 @@ public class AdminController {
 	public ResponseEntity<AdminOrderDetailsResponse> getOrderDetails(@PathVariable int orderId) {
 		AdminOrderDetailsResponse response = adminService.getOrderDetailsForAdmin(orderId);
 		return ResponseEntity.ok(response);
+	}
+
+	// Assign delivery boy to order
+	@PutMapping("/orders/{orderId}/assign-delivery-boy/{deliveryBoyId}")
+	public ResponseEntity<?> assignDeliveryBoy(@PathVariable int orderId, @PathVariable int deliveryBoyId) {
+		try {
+			return adminService.assignDeliveryBoy(orderId, deliveryBoyId);
+		} catch (RuntimeException e) {
+			return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+		}
 	}
 }
