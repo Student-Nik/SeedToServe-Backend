@@ -87,7 +87,7 @@ public class OrderService {
 	    order.setOrderStatus(OrderStatus.PLACED);
 	    order.setPaymentStatus(PaymentStatus.PENDING);
 	    
-	    // order.setDeliveryBoy();
+	    // order.setDeliveryBoy(); its null only right now, admin will assign delivery boy
 
 	    double totalAmount = 0.0;
 

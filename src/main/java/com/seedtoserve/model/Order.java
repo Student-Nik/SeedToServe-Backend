@@ -59,6 +59,6 @@ public class Order {
     private List<OrderItem> orderItems = new ArrayList<>();
     
     // Delivery boy assigned by admin
-    //@ManyToOne
-    //private DeliveryBoy deliveryBoy;
+    @ManyToOne
+    private DeliveryBoy deliveryBoy;
 }
