@@ -51,6 +51,9 @@ public class OrderService {
 	@Autowired
 	private AddressRepository addressRepository;
 	
+	@Autowired
+	private OrderEmailService orderEmailService;
+	
 	// Create Order
 	
 	@Transactional
@@ -134,6 +137,8 @@ public class OrderService {
 
 	    // 7. Save Order
 	    orderRepository.save(order);
+	    
+	    orderEmailService.sendOrderConfirmationEmail(customer, order);
 
 	    // 8. Clear Cart
 	    cartItemRepository.deleteByCustomer(customer);
