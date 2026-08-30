@@ -18,50 +18,64 @@ import org.apache.commons.codec.binary.Hex;
 @Service
 public class PaymentVerificationService {
 
-    @Autowired
-    private OrderRepository orderRepository;
+	@Autowired
+	private OrderRepository orderRepository;
 
-    @Autowired
-    private com.seedtoserve.config.RazorpayConfig razorpayConfig;
-    
-    @Autowired
-    private PaymentRepository paymentRepository;
+	@Autowired
+	private com.seedtoserve.config.RazorpayConfig razorpayConfig;
 
-    @Transactional
-    public boolean verifyAndMarkPaid(String razorpayOrderId, String razorpayPaymentId, String razorpaySignature) throws Exception {
-        // 1️ Verify signature
-        String data = razorpayOrderId + "|" + razorpayPaymentId;
-        String secret = razorpayConfig.getSecret();
+	@Autowired
+	private PaymentRepository paymentRepository;
+	
+	@Autowired
+	private OrderEmailService orderEmailService;
 
-        Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-        SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256");
-        sha256_HMAC.init(secret_key);
+	public boolean verifyAndMarkPaid(String razorpayOrderId, String razorpayPaymentId, String razorpaySignature)
+			throws Exception {
 
-        String hash = Hex.encodeHexString(sha256_HMAC.doFinal(data.getBytes("UTF-8")));
+		// 1. Verify signature
+		String data = razorpayOrderId + "|" + razorpayPaymentId;
 
-        boolean isValid = hash.equals(razorpaySignature);
+		String secret = razorpayConfig.getSecret();
 
-        if (!isValid) {
-            System.out.println("Signature mismatch! Expected: " + hash + ", Received: " + razorpaySignature);
-            return false;
-        }
+		Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
 
-        // 2️ Update order status to PAID
-        Order order = orderRepository.findByRazorpayOrderId(razorpayOrderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+		SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256");
 
-        order.setPaymentStatus(PaymentStatus.PAID);  
-        orderRepository.save(order);
-        
-     // 3️ Update payment table
-        Payment payment = paymentRepository.findByRazorpayOrderId(razorpayOrderId)
-                .orElseThrow(() -> new RuntimeException("Payment record not found"));
+		sha256_HMAC.init(secret_key);
 
-        payment.setRazorpayPaymentId(razorpayPaymentId);
-        payment.setRazorpaySignature(razorpaySignature);
-        payment.setStatus("PAID");  // Enum for PAID
-        paymentRepository.save(payment);
+		String hash = Hex.encodeHexString(sha256_HMAC.doFinal(data.getBytes("UTF-8")));
 
-        return true;
-    }
+		boolean isValid = hash.equals(razorpaySignature);
+
+		if (!isValid) {
+
+			System.out.println("Signature mismatch! Expected: " + hash + ", Received: " + razorpaySignature);
+
+			return false;
+		}
+
+		// 2. Update order payment status
+		Order order = orderRepository.findByRazorpayOrderId(razorpayOrderId)
+				.orElseThrow(() -> new RuntimeException("Order not found"));
+
+		order.setPaymentStatus(PaymentStatus.PAID);
+
+		Order savedOrder = orderRepository.save(order);
+
+		// 3. Update payment table
+		Payment payment = paymentRepository.findByRazorpayOrderId(razorpayOrderId)
+				.orElseThrow(() -> new RuntimeException("Payment record not found"));
+
+		payment.setRazorpayPaymentId(razorpayPaymentId);
+		payment.setRazorpaySignature(razorpaySignature);
+		payment.setStatus("PAID");
+
+		paymentRepository.save(payment);
+
+		// 4. Send payment confirmation email
+		orderEmailService.sendPaymentConfirmationEmail(savedOrder.getCustomer(), savedOrder, payment);
+
+		return true;
+	}
 }
