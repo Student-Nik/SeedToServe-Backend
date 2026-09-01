@@ -14,21 +14,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminUserAuthenticationService {
 
-    private final AdminRepository adminRepository;
+	private final AdminRepository adminRepository;
 
-    public UserDetails loadUserByUsername(String email)
-            throws UsernameNotFoundException {
+	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
-        Admin admin = adminRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "Admin not found with email: " + email
-                        ));
+		Admin admin = adminRepository.findByEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException("Admin not found with email: " + email));
 
-        return User.builder()
-                .username(admin.getEmail())
-                .password(admin.getPassword())
-                .roles("ADMIN")
-                .build();
-    }
+		return User.builder().username(admin.getEmail()).password(admin.getPassword()).roles("ADMIN").build();
+	}
 }

@@ -26,6 +26,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 	
 	@Autowired
 	private AdminUserAuthenticationService adminUserAuthenticationService;
+	
+	@Autowired
+	private DeliveryBoyUserAuthenticationService deliveryBoyUserAuthenticationService;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -57,13 +60,21 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 			// ADMIN
 			if ("ADMIN".equalsIgnoreCase(role)) {
 
-				userDetails = adminUserAuthenticationService.loadUserByUsername(username);
+			    userDetails =
+			            adminUserAuthenticationService.loadUserByUsername(username);
 
 			}
-			// Existing Customer/Farmer authentication
+			else if ("DELIVERY_BOY".equalsIgnoreCase(role)) {
+
+			    userDetails =
+			            deliveryBoyUserAuthenticationService.loadUserByUsername(username);
+
+			}
 			else {
 
-				userDetails = userService.loadUserByUsername(username);
+			    // CUSTOMER / FARMER
+			    userDetails =
+			            userService.loadUserByUsername(username);
 			}
 
 			if (jwtUtil.isValidToken(token, userDetails.getUsername())) {

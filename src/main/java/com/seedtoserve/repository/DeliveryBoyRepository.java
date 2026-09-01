@@ -12,4 +12,6 @@ public interface DeliveryBoyRepository extends JpaRepository<DeliveryBoy, Intege
 	Optional<DeliveryBoy> findByEmail(String email);
 
     boolean existsByEmail(String email);
+    
+
 }

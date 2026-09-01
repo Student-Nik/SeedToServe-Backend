@@ -31,4 +31,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 		    WHERE o.orderStatus = :status
 		""")
 		Double getTotalRevenueByStatus(OrderStatus status);
+	
+	List<Order> findByDeliveryBoyId(int deliveryBoyId);
 }
