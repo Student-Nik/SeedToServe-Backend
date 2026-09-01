@@ -4,8 +4,12 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import com.seedtoserve.dto.AdminDashboardResponse;
@@ -32,46 +36,96 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class AdminService {
 
 	private final AdminRepository adminRepository;
-	private final PasswordEncoder passwordEncoder;
+
 	private final JwtUtil jwtUtil;
 
 	private final CustomerRepository customerRepository;
 	private final ProductRepository productRepository;
 	private final OrderRepository orderRepository;
 	private final DeliveryBoyRepository deliveryBoyRepository;
+
 	private final DeliveryBoyEmailService deliveryBoyEmailService;
 
-	// Admin Log in
+	public AdminService(AdminRepository adminRepository, JwtUtil jwtUtil, CustomerRepository customerRepository,
+			ProductRepository productRepository, OrderRepository orderRepository,
+			DeliveryBoyRepository deliveryBoyRepository, DeliveryBoyEmailService deliveryBoyEmailService,
+			@Qualifier("adminAuthenticationManager") AuthenticationManager adminAuthenticationManager) {
+
+		this.adminRepository = adminRepository;
+		this.jwtUtil = jwtUtil;
+		this.customerRepository = customerRepository;
+		this.productRepository = productRepository;
+		this.orderRepository = orderRepository;
+		this.deliveryBoyRepository = deliveryBoyRepository;
+		this.deliveryBoyEmailService = deliveryBoyEmailService;
+		this.adminAuthenticationManager = adminAuthenticationManager;
+	}
+
+	// =====================================================
+	// ADMIN AUTHENTICATION MANAGER
+	// =====================================================
+
+	@Qualifier("adminAuthenticationManager")
+	private final AuthenticationManager adminAuthenticationManager;
+
+	// =====================================================
+	// ADMIN LOGIN
+	// =====================================================
+
 	public AdminLoginResponse login(AdminLoginRequest request) {
 
-		Admin admin = adminRepository.findByEmail(request.getEmail())
-				.orElseThrow(() -> new RuntimeException("Invalid email or password"));
+		System.out.println("=================================");
+		System.out.println("ADMIN LOGIN REQUEST");
+		System.out.println("Email: " + request.getEmail());
+		System.out.println("=================================");
 
-		if (!"ACTIVE".equalsIgnoreCase(admin.getStatus())) {
-			throw new RuntimeException("Admin account is inactive");
-		}
+		try {
 
-		if (!passwordEncoder.matches(request.getPassword(), admin.getPassword())) {
+			Authentication authentication = adminAuthenticationManager
+					.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+			System.out.println("ADMIN AUTHENTICATION SUCCESS");
+			System.out.println("Authenticated user: " + authentication.getName());
+			System.out.println("Authorities: " + authentication.getAuthorities());
+
+			String email = authentication.getName();
+
+			Admin admin = adminRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Admin not found"));
+
+			if (!"ACTIVE".equalsIgnoreCase(admin.getStatus())) {
+				throw new RuntimeException("Admin account is inactive");
+			}
+
+			String token = jwtUtil.createToken(admin.getEmail(), "ADMIN");
+
+			return new AdminLoginResponse(token, admin.getId(), admin.getEmail(), "ADMIN");
+
+		} catch (BadCredentialsException e) {
+
+			e.printStackTrace();
 
 			throw new RuntimeException("Invalid email or password");
 		}
-
-		String token = jwtUtil.createAdminToken(admin.getEmail(), "ADMIN");
-
-		return new AdminLoginResponse(token, admin.getId(), admin.getEmail(), "ADMIN");
 	}
 
-	// Admin Profile
+	// =====================================================
+	// ADMIN PROFILE
+	// =====================================================
+
 	public AdminProfileResponse getProfile(String email) {
+
 		Admin admin = adminRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Admin not found"));
+
 		return new AdminProfileResponse(admin.getId(), admin.getEmail(), admin.getStatus());
 	}
 
-	// Admin Dashboard
+	// =====================================================
+	// ADMIN DASHBOARD
+	// =====================================================
+
 	public AdminDashboardResponse getDashboard() {
 
 		long totalBuyers = customerRepository.countByRegistrationType("BUYER");
@@ -96,7 +150,10 @@ public class AdminService {
 				completedOrders, cancelledOrders, totalRevenue);
 	}
 
-	// Show orders placed by buyers to admin
+	// =====================================================
+	// SHOW ALL ORDERS TO ADMIN
+	// =====================================================
+
 	public List<AdminOrderResponse> getAllOrdersForAdmin() {
 
 		List<Order> orders = orderRepository.findAll();
@@ -108,7 +165,10 @@ public class AdminService {
 				.toList();
 	}
 
-	// Admin gets a particular order
+	// =====================================================
+	// GET PARTICULAR ORDER DETAILS
+	// =====================================================
+
 	public AdminOrderDetailsResponse getOrderDetailsForAdmin(int orderId) {
 
 		Order order = orderRepository.findById(orderId)
@@ -130,57 +190,53 @@ public class AdminService {
 				addressResponse, items);
 	}
 
-	// Assign Delivery boy
+	// =====================================================
+	// ASSIGN DELIVERY BOY
+	// =====================================================
+
 	@Transactional
 	public ResponseEntity<?> assignDeliveryBoy(int orderId, int deliveryBoyId) {
 
-	    Order order = orderRepository.findById(orderId)
-	            .orElseThrow(() ->
-	                    new RuntimeException("Order not found"));
+		Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
 
-	    DeliveryBoy deliveryBoy = deliveryBoyRepository.findById(deliveryBoyId)
-	            .orElseThrow(() ->
-	                    new RuntimeException("Delivery boy not found"));
+		DeliveryBoy deliveryBoy = deliveryBoyRepository.findById(deliveryBoyId)
+				.orElseThrow(() -> new RuntimeException("Delivery boy not found"));
 
-	    // Check availability
-	    if (!deliveryBoy.isAvailable()) {
-	        throw new RuntimeException(
-	                "Delivery boy is currently not available");
-	    }
+		// Check availability
+		if (!deliveryBoy.isAvailable()) {
 
-	    // Check whether order is already assigned
-	    if (order.getDeliveryBoy() != null) {
-	        throw new RuntimeException(
-	                "A delivery boy is already assigned to this order");
-	    }
+			throw new RuntimeException("Delivery boy is currently not available");
+		}
 
-	    // Assign delivery boy
-	    order.setDeliveryBoy(deliveryBoy);
+		// Check whether order is already assigned
+		if (order.getDeliveryBoy() != null) {
 
-	    // Update order status
-	    order.setOrderStatus(OrderStatus.ASSIGNED);
+			throw new RuntimeException("A delivery boy is already assigned to this order");
+		}
 
-	    // Delivery boy is now busy
-	    deliveryBoy.setAvailable(false);
+		// Assign delivery boy
+		order.setDeliveryBoy(deliveryBoy);
 
-	    // Save changes
-	    orderRepository.save(order);
-	    deliveryBoyRepository.save(deliveryBoy);
+		// Update order status
+		order.setOrderStatus(OrderStatus.ASSIGNED);
 
-	    // Send email after successful database update
-	    deliveryBoyEmailService.sendOrderAssignmentEmail(
-	            deliveryBoy,
-	            order
-	    );
+		// Delivery boy is now busy
+		deliveryBoy.setAvailable(false);
 
-	    return ResponseEntity.ok(
-	            Map.of(
-	                    "message", "Delivery boy assigned successfully",
-	                    "orderId", order.getId(),
-	                    "deliveryBoyId", deliveryBoy.getId(),
-	                    "orderStatus", order.getOrderStatus()
-	            )
-	    );
+		// Save changes
+		orderRepository.save(order);
+
+		deliveryBoyRepository.save(deliveryBoy);
+
+		// Send email after successful database update
+		deliveryBoyEmailService.sendOrderAssignmentEmail(deliveryBoy, order);
+
+		return ResponseEntity.ok(Map.of("message", "Delivery boy assigned successfully",
+
+				"orderId", order.getId(),
+
+				"deliveryBoyId", deliveryBoy.getId(),
+
+				"orderStatus", order.getOrderStatus()));
 	}
-
 }

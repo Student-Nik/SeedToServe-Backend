@@ -3,6 +3,7 @@ package com.seedtoserve.controller;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,49 +32,56 @@ import jakarta.validation.Valid;
 @RestController
 public class RegisterAndLoginController {
 
-    @Autowired
-    private CustomerService customerService;
+	@Autowired
+	private CustomerService customerService;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+	@Autowired
+	@Qualifier("customerAuthenticationManager")
+	private AuthenticationManager authenticationManager;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+	@Autowired
+	private JwtUtil jwtUtil;
 
-    // Registration
-    @PostMapping("/api/auth/register")
-    public ResponseEntity<Map<String, Object>> registerUser(@Valid @RequestBody CustomerDTO customerDto) {
-        return customerService.registerUser(customerDto);
-    }
+	// Registration
+	@PostMapping("/api/auth/register")
+	public ResponseEntity<Map<String, Object>> registerUser(@Valid @RequestBody CustomerDTO customerDto) {
+		return customerService.registerUser(customerDto);
+	}
 
-    // Login
-    @PostMapping("/api/auth/login")
-    public ResponseEntity<JwtLoginResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
-        try {
-            // Authenticate the user
-            Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
-            );
+	// Login
+	@PostMapping("/api/auth/login")
+	public ResponseEntity<JwtLoginResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
 
-            // Get authenticated user details
-            CustomerUserDetails userDetails = (CustomerUserDetails) auth.getPrincipal();
-            Customer customer = userDetails.getCustomer();
+		try {
 
-            // Generate JWT token
-            String token = jwtUtil.createToken(userDetails.getUsername());
+			// Authenticate the user
+			Authentication auth = authenticationManager.authenticate(
+					new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
-            // Build JWT response
-            JwtLoginResponse response = new JwtLoginResponse();
-            response.setToken(token);
-            response.setUsername(customer.getEmail());
-            response.setRole(customer.getRegistrationType().toUpperCase());
+			// Get authenticated user details
+			CustomerUserDetails userDetails = (CustomerUserDetails) auth.getPrincipal();
 
-            //  Return JSON with the token
-            return ResponseEntity.ok(response);
+			Customer customer = userDetails.getCustomer();
 
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-    }
+			// Get role
+			String role = customer.getRegistrationType().toUpperCase();
+
+			// Generate JWT token
+			String token = jwtUtil.createToken(customer.getEmail(), role);
+
+			// Build JWT response
+			JwtLoginResponse response = new JwtLoginResponse();
+
+			response.setToken(token);
+			response.setUsername(customer.getEmail());
+			response.setRole(role);
+
+			return ResponseEntity.ok(response);
+
+		} catch (BadCredentialsException e) {
+
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+	}
 
 }

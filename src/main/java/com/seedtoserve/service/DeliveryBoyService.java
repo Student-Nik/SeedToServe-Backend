@@ -3,7 +3,12 @@ package com.seedtoserve.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,19 +27,44 @@ import com.seedtoserve.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class DeliveryBoyService {
 
 	private final DeliveryBoyRepository deliveryBoyRepository;
-	private final PasswordEncoder passwordEncoder;
-	private final DeliveryBoyEmailService deliveryBoyEmailService;
-	private final JwtUtil jwtUtil;
-	private final OrderRepository orderRepository;
 
-	// Create Delivery Boy
+	private final PasswordEncoder passwordEncoder;
+
+	private final DeliveryBoyEmailService deliveryBoyEmailService;
+
+	private final JwtUtil jwtUtil;
+
+	private final OrderRepository orderRepository;
+	private final AuthenticationManager deliveryBoyAuthenticationManager;
+
+	public DeliveryBoyService(
+	        DeliveryBoyRepository deliveryBoyRepository,
+	        PasswordEncoder passwordEncoder,
+	        DeliveryBoyEmailService deliveryBoyEmailService,
+	        JwtUtil jwtUtil,
+	        OrderRepository orderRepository,
+	        @Qualifier("deliveryBoyAuthenticationManager")
+	        AuthenticationManager deliveryBoyAuthenticationManager) {
+
+	    this.deliveryBoyRepository = deliveryBoyRepository;
+	    this.passwordEncoder = passwordEncoder;
+	    this.deliveryBoyEmailService = deliveryBoyEmailService;
+	    this.jwtUtil = jwtUtil;
+	    this.orderRepository = orderRepository;
+	    this.deliveryBoyAuthenticationManager = deliveryBoyAuthenticationManager;
+	}
+
+	// =====================================================
+	// CREATE DELIVERY BOY
+	// =====================================================
+
 	public DeliveryBoy createDeliveryBoy(DeliveryBoyRequest deliveryBoyRequest) {
 
 		if (deliveryBoyRepository.existsByEmail(deliveryBoyRequest.getEmail())) {
+
 			throw new RuntimeException("Delivery Boy with this email already exists");
 		}
 
@@ -48,36 +78,65 @@ public class DeliveryBoyService {
 
 		DeliveryBoy savedDeliveryBoy = deliveryBoyRepository.save(deliveryBoy);
 
+		// Send credentials by email
 		deliveryBoyEmailService.sendDeliveryBoyCredentials(deliveryBoyRequest.getEmail(),
 				deliveryBoyRequest.getFirstName(), temporaryPassword);
 
 		return savedDeliveryBoy;
 	}
 
+	// =====================================================
+	// GENERATE TEMPORARY PASSWORD
+	// =====================================================
+
 	private String generateTemporaryPassword() {
+
 		return UUID.randomUUID().toString().substring(0, 8);
 	}
 
-	// Delivery Boy Login
+	// =====================================================
+	// DELIVERY BOY LOGIN
+	// =====================================================
+
 	public ResponseEntity<?> login(DeliveryBoyLoginRequest request) {
 
-		DeliveryBoy deliveryBoy = deliveryBoyRepository.findByEmail(request.getEmail())
-				.orElseThrow(() -> new RuntimeException("Invalid email or password"));
+		try {
 
-		if (!passwordEncoder.matches(request.getPassword(), deliveryBoy.getPassword())) {
+			Authentication authentication = deliveryBoyAuthenticationManager
+					.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+			/*
+			 * Authentication successful.
+			 *
+			 * DeliveryBoyUserAuthenticationService has already:
+			 *
+			 * 1. Found the delivery boy 2. Loaded the encoded password 3. Checked the
+			 * password 4. Assigned ROLE_DELIVERY_BOY
+			 */
+
+			String email = authentication.getName();
+
+			DeliveryBoy deliveryBoy = deliveryBoyRepository.findByEmail(email)
+					.orElseThrow(() -> new RuntimeException("Delivery boy not found"));
+
+			// Create JWT
+			String token = jwtUtil.createToken(deliveryBoy.getEmail(), "DELIVERY_BOY");
+
+			DeliveryBoyLoginResponse response = new DeliveryBoyLoginResponse("Delivery Boy Login Successful", token,
+					deliveryBoy.getId(), deliveryBoy.getFirstName(), deliveryBoy.getLastName(), deliveryBoy.getEmail());
+
+			return ResponseEntity.ok(response);
+
+		} catch (BadCredentialsException e) {
 
 			throw new RuntimeException("Invalid email or password");
 		}
-
-		String token = jwtUtil.createAdminToken(deliveryBoy.getEmail(), "DELIVERY_BOY");
-
-		DeliveryBoyLoginResponse response = new DeliveryBoyLoginResponse("Delivery Boy Login Successful", token,
-				deliveryBoy.getId(), deliveryBoy.getFirstName(), deliveryBoy.getLastName(), deliveryBoy.getEmail());
-
-		return ResponseEntity.ok(response);
 	}
 
-	// Show all delivery boy's
+	// =====================================================
+	// SHOW ALL DELIVERY BOYS
+	// =====================================================
+
 	public List<DeliveryBoyForAdminResponse> getAllDeliveryBoys() {
 
 		return deliveryBoyRepository.findAll().stream()
@@ -87,7 +146,10 @@ public class DeliveryBoyService {
 				.toList();
 	}
 
-	//
+	// =====================================================
+	// GET ASSIGNED ORDERS BY DELIVERY BOY EMAIL
+	// =====================================================
+
 	public List<DeliveryBoyOrderResponse> getAssignedOrdersByEmail(String email) {
 
 		DeliveryBoy deliveryBoy = deliveryBoyRepository.findByEmail(email)

@@ -25,19 +25,7 @@ public class JwtUtil {
     }
 
     // Create a JWT token for a given username
-    public String createToken(String username) {
-        String token = Jwts.builder()
-                .subject(username)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + TOKEN_EXPIRY_DURATION))
-                .signWith(getSecretKey())
-                .compact();
-
-        System.out.println("Generated Token: " + token);
-        return token;
-    }
-    
-    public String createAdminToken(String username, String role) {
+    public String createToken(String username, String role) {
 
         String token = Jwts.builder()
                 .subject(username)
@@ -53,7 +41,7 @@ public class JwtUtil {
 
         return token;
     }
-
+    
     // Extract username from the token
     public String getUsernameFromToken(String token) {
         return Jwts.parser()

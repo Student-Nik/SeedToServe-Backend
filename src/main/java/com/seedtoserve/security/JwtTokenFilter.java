@@ -23,10 +23,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
 	@Autowired
 	private SecurityUserAuthenticationService userService;
-	
+
 	@Autowired
 	private AdminUserAuthenticationService adminUserAuthenticationService;
-	
+
 	@Autowired
 	private DeliveryBoyUserAuthenticationService deliveryBoyUserAuthenticationService;
 
@@ -45,10 +45,12 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 			token = authHeader.substring(7);
 
 			try {
+
 				username = jwtUtil.getUsernameFromToken(token);
 				role = jwtUtil.getRoleFromToken(token);
 
 			} catch (Exception e) {
+
 				System.out.println("JWTTokenFilter: Invalid token - " + e.getMessage());
 			}
 		}
@@ -60,21 +62,19 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 			// ADMIN
 			if ("ADMIN".equalsIgnoreCase(role)) {
 
-			    userDetails =
-			            adminUserAuthenticationService.loadUserByUsername(username);
-
+				userDetails = adminUserAuthenticationService.loadUserByUsername(username);
 			}
+
+			// DELIVERY BOY
 			else if ("DELIVERY_BOY".equalsIgnoreCase(role)) {
 
-			    userDetails =
-			            deliveryBoyUserAuthenticationService.loadUserByUsername(username);
-
+				userDetails = deliveryBoyUserAuthenticationService.loadUserByUsername(username);
 			}
+
+			// CUSTOMER / FARMER
 			else {
 
-			    // CUSTOMER / FARMER
-			    userDetails =
-			            userService.loadUserByUsername(username);
+				userDetails = userService.loadUserByUsername(username);
 			}
 
 			if (jwtUtil.isValidToken(token, userDetails.getUsername())) {
@@ -89,10 +89,6 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 				System.out.println("JWTTokenFilter: Security context set for user " + username);
 
 				System.out.println("User authorities: " + userDetails.getAuthorities());
-
-			} else {
-
-				System.out.println("JWTTokenFilter: Invalid or expired token for user " + username);
 			}
 		}
 

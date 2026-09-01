@@ -31,27 +31,43 @@ public class GoogleSuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             HttpServletResponse response,
             Authentication authentication) throws IOException {
 
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        OAuth2User oAuth2User =
+                (OAuth2User) authentication.getPrincipal();
+
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
 
-        Optional<Customer> customerOpt = customerRepository.findByEmail(email);
+        Optional<Customer> customerOpt =
+                customerRepository.findByEmail(email);
+
         Customer customer;
+
         if (customerOpt.isEmpty()) {
-            
+
             customer = new Customer();
+
             customer.setEmail(email);
             customer.setFirstName(name);
             customer.setRegistrationType("BUYER");
+
             customerRepository.save(customer);
+
         } else {
+
             customer = customerOpt.get();
         }
 
-        
-        String token = jwtUtil.createToken(customer.getEmail());
+        // Get customer role
+        String role = customer.getRegistrationType().toUpperCase();
 
-       
-        response.sendRedirect("http://localhost:5173/auth-success?token=" + token);
+        // Generate JWT with email + role
+        String token = jwtUtil.createToken(
+                customer.getEmail(),
+                role
+        );
+
+        response.sendRedirect(
+                "http://localhost:5173/auth-success?token=" + token
+        );
     }
 }

@@ -10,11 +10,11 @@ import com.seedtoserve.security.JwtUtil;
 public class SecurityTestController {
 
 	@Autowired
-    private JwtUtil jwtUtil;
+	private JwtUtil jwtUtil;
 
-    @GetMapping("/generate-token")
-    public String generateToken() {
-        String token = jwtUtil.createToken("nkute611@gmail.com"); 
-        return token;
-    }
+	@GetMapping("/generate-token")
+	public String generateToken() {
+		String token = jwtUtil.createToken("nkute611@gmail.com", "BUYER");
+		return token;
+	}
 }
