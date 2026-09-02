@@ -1,9 +1,12 @@
 package com.seedtoserve.security;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -18,81 +21,155 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtTokenFilter extends OncePerRequestFilter {
 
-	@Autowired
-	private JwtUtil jwtUtil;
+    @Autowired
+    private JwtUtil jwtUtil;
 
-	@Autowired
-	private SecurityUserAuthenticationService userService;
+    @Autowired
+    private SecurityUserAuthenticationService userService;
 
-	@Autowired
-	private AdminUserAuthenticationService adminUserAuthenticationService;
+    @Autowired
+    private AdminUserAuthenticationService adminUserAuthenticationService;
 
-	@Autowired
-	private DeliveryBoyUserAuthenticationService deliveryBoyUserAuthenticationService;
+    @Autowired
+    private DeliveryBoyUserAuthenticationService deliveryBoyUserAuthenticationService;
 
-	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
 
-		String authHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
-		String token = null;
-		String username = null;
-		String role = null;
+        String token = null;
+        String username = null;
+        String role = null;
 
-		if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        // =====================================================
+        // GET JWT TOKEN
+        // =====================================================
 
-			token = authHeader.substring(7);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
 
-			try {
+            token = authHeader.substring(7);
 
-				username = jwtUtil.getUsernameFromToken(token);
-				role = jwtUtil.getRoleFromToken(token);
+            try {
 
-			} catch (Exception e) {
+                username = jwtUtil.getUsernameFromToken(token);
+                role = jwtUtil.getRoleFromToken(token);
 
-				System.out.println("JWTTokenFilter: Invalid token - " + e.getMessage());
-			}
-		}
+                System.out.println("JWT Username: " + username);
+                System.out.println("JWT Role: " + role);
 
-		if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            } catch (Exception e) {
 
-			UserDetails userDetails;
+                System.out.println(
+                        "JWTTokenFilter: Invalid token - "
+                                + e.getMessage());
+            }
+        }
 
-			// ADMIN
-			if ("ADMIN".equalsIgnoreCase(role)) {
+        // =====================================================
+        // AUTHENTICATE USER
+        // =====================================================
 
-				userDetails = adminUserAuthenticationService.loadUserByUsername(username);
-			}
+        if (username != null
+                && role != null
+                && SecurityContextHolder.getContext()
+                        .getAuthentication() == null) {
 
-			// DELIVERY BOY
-			else if ("DELIVERY_BOY".equalsIgnoreCase(role)) {
+            UserDetails userDetails;
 
-				userDetails = deliveryBoyUserAuthenticationService.loadUserByUsername(username);
-			}
+            // =================================================
+            // ADMIN
+            // =================================================
 
-			// CUSTOMER / FARMER
-			else {
+            if ("ADMIN".equalsIgnoreCase(role)) {
 
-				userDetails = userService.loadUserByUsername(username);
-			}
+                userDetails =
+                        adminUserAuthenticationService
+                                .loadUserByUsername(username);
+            }
 
-			if (jwtUtil.isValidToken(token, userDetails.getUsername())) {
+            // =================================================
+            // DELIVERY BOY
+            // =================================================
 
-				UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
-						null, userDetails.getAuthorities());
+            else if ("DELIVERY_BOY".equalsIgnoreCase(role)) {
 
-				authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                userDetails =
+                        deliveryBoyUserAuthenticationService
+                                .loadUserByUsername(username);
+            }
 
-				SecurityContextHolder.getContext().setAuthentication(authToken);
+            // =================================================
+            // CUSTOMER / FARMER
+            // =================================================
 
-				System.out.println("JWTTokenFilter: Security context set for user " + username);
+            else {
 
-				System.out.println("User authorities: " + userDetails.getAuthorities());
-			}
-		}
+                userDetails =
+                        userService
+                                .loadUserByUsername(username);
+            }
 
-		filterChain.doFilter(request, response);
-	}
+            // =================================================
+            // VALIDATE TOKEN
+            // =================================================
 
+            if (jwtUtil.isValidToken(
+                    token,
+                    userDetails.getUsername())) {
+
+                /*
+                 * Spring Security hasRole("DELIVERY_BOY")
+                 * expects:
+                 *
+                 * ROLE_DELIVERY_BOY
+                 */
+
+                String authorityName =
+                        "ROLE_" + role.toUpperCase();
+
+                List<GrantedAuthority> authorities =
+                        List.of(
+                                new SimpleGrantedAuthority(
+                                        authorityName)
+                        );
+
+                // =================================================
+                // CREATE AUTHENTICATION
+                // =================================================
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                authorities
+                        );
+
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
+                );
+
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authToken);
+
+                System.out.println(
+                        "JWTTokenFilter: Security context set for "
+                                + username);
+
+                System.out.println(
+                        "JWT Role: " + role);
+
+                System.out.println(
+                        "Granted Authority: " + authorities);
+            }
+        }
+
+        filterChain.doFilter(request, response);
+    }
 }
