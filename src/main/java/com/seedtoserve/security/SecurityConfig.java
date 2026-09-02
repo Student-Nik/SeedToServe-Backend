@@ -24,261 +24,197 @@ import com.seedtoserve.config.GoogleSuccessHandler;
 @Configuration
 public class SecurityConfig {
 
-    @Autowired
-    private JwtTokenFilter jwtTokenFilter;
+	@Autowired
+	private JwtTokenFilter jwtTokenFilter;
 
-    @Autowired
-    private GoogleSuccessHandler googleSuccessHandler;
+	@Autowired
+	private GoogleSuccessHandler googleSuccessHandler;
 
+	// =====================================================
+	// PASSWORD ENCODER
+	// =====================================================
 
-    // =====================================================
-    // PASSWORD ENCODER
-    // =====================================================
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	// =====================================================
+	// CUSTOMER AUTHENTICATION PROVIDER
+	// =====================================================
 
+	@Bean
+	public AuthenticationProvider customerAuthenticationProvider(SecurityUserAuthenticationService customerUserDetails,
+			PasswordEncoder passwordEncoder) {
 
-    // =====================================================
-    // CUSTOMER AUTHENTICATION PROVIDER
-    // =====================================================
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
 
-    @Bean
-    public AuthenticationProvider customerAuthenticationProvider(
-            SecurityUserAuthenticationService customerUserDetails,
-            PasswordEncoder passwordEncoder) {
+		provider.setUserDetailsService(customerUserDetails);
+		provider.setPasswordEncoder(passwordEncoder);
 
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider();
+		return provider;
+	}
 
-        provider.setUserDetailsService(customerUserDetails);
-        provider.setPasswordEncoder(passwordEncoder);
+	// =====================================================
+	// CUSTOMER AUTHENTICATION MANAGER
+	// =====================================================
 
-        return provider;
-    }
+	@Bean
+	@Primary
+	public AuthenticationManager customerAuthenticationManager(
+			@Qualifier("customerAuthenticationProvider") AuthenticationProvider customerAuthenticationProvider) {
 
+		return new ProviderManager(customerAuthenticationProvider);
+	}
 
-    // =====================================================
-    // CUSTOMER AUTHENTICATION MANAGER
-    // =====================================================
+	// =====================================================
+	// ADMIN AUTHENTICATION PROVIDER
+	// =====================================================
 
-    @Bean
-    @Primary
-    public AuthenticationManager customerAuthenticationManager(
-            @Qualifier("customerAuthenticationProvider")
-            AuthenticationProvider customerAuthenticationProvider) {
+	@Bean
+	public AuthenticationProvider adminAuthenticationProvider(AdminUserAuthenticationService adminUserDetails,
+			PasswordEncoder passwordEncoder) {
 
-        return new ProviderManager(
-                customerAuthenticationProvider);
-    }
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
 
+		provider.setUserDetailsService(adminUserDetails);
+		provider.setPasswordEncoder(passwordEncoder);
 
-    // =====================================================
-    // ADMIN AUTHENTICATION PROVIDER
-    // =====================================================
+		return provider;
+	}
 
-    @Bean
-    public AuthenticationProvider adminAuthenticationProvider(
-            AdminUserAuthenticationService adminUserDetails,
-            PasswordEncoder passwordEncoder) {
+	// =====================================================
+	// ADMIN AUTHENTICATION MANAGER
+	// =====================================================
 
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider();
+	@Bean
+	public AuthenticationManager adminAuthenticationManager(
+			@Qualifier("adminAuthenticationProvider") AuthenticationProvider adminAuthenticationProvider) {
 
-        provider.setUserDetailsService(adminUserDetails);
-        provider.setPasswordEncoder(passwordEncoder);
+		return new ProviderManager(adminAuthenticationProvider);
+	}
 
-        return provider;
-    }
+	// =====================================================
+	// DELIVERY BOY AUTHENTICATION PROVIDER
+	// =====================================================
 
+	@Bean
+	public AuthenticationProvider deliveryBoyAuthenticationProvider(
+			DeliveryBoyUserAuthenticationService deliveryBoyUserDetails, PasswordEncoder passwordEncoder) {
 
-    // =====================================================
-    // ADMIN AUTHENTICATION MANAGER
-    // =====================================================
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
 
-    @Bean
-    public AuthenticationManager adminAuthenticationManager(
-            @Qualifier("adminAuthenticationProvider")
-            AuthenticationProvider adminAuthenticationProvider) {
+		provider.setUserDetailsService(deliveryBoyUserDetails);
+		provider.setPasswordEncoder(passwordEncoder);
 
-        return new ProviderManager(
-                adminAuthenticationProvider);
-    }
+		return provider;
+	}
 
+	// =====================================================
+	// DELIVERY BOY AUTHENTICATION MANAGER
+	// =====================================================
 
-    // =====================================================
-    // DELIVERY BOY AUTHENTICATION PROVIDER
-    // =====================================================
+	@Bean
+	public AuthenticationManager deliveryBoyAuthenticationManager(
+			@Qualifier("deliveryBoyAuthenticationProvider") AuthenticationProvider deliveryBoyAuthenticationProvider) {
 
-    @Bean
-    public AuthenticationProvider deliveryBoyAuthenticationProvider(
-            DeliveryBoyUserAuthenticationService deliveryBoyUserDetails,
-            PasswordEncoder passwordEncoder) {
+		return new ProviderManager(deliveryBoyAuthenticationProvider);
+	}
 
-        DaoAuthenticationProvider provider =
-                new DaoAuthenticationProvider();
+	// =====================================================
+	// SECURITY FILTER CHAIN
+	// =====================================================
 
-        provider.setUserDetailsService(deliveryBoyUserDetails);
-        provider.setPasswordEncoder(passwordEncoder);
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http,
+			@Qualifier("customerAuthenticationManager") AuthenticationManager authenticationManager) throws Exception {
 
-        return provider;
-    }
+		http
+				// =================================================
+				// CSRF
+				// =================================================
 
+				.csrf(csrf -> csrf.disable())
 
-    // =====================================================
-    // DELIVERY BOY AUTHENTICATION MANAGER
-    // =====================================================
+				// =================================================
+				// CORS
+				// =================================================
 
-    @Bean
-    public AuthenticationManager deliveryBoyAuthenticationManager(
-            @Qualifier("deliveryBoyAuthenticationProvider")
-            AuthenticationProvider deliveryBoyAuthenticationProvider) {
+				.cors(cors -> cors.configurationSource(request -> {
 
-        return new ProviderManager(
-                deliveryBoyAuthenticationProvider);
-    }
+					CorsConfiguration config = new CorsConfiguration();
 
+					config.setAllowedOrigins(List.of("http://localhost:5173"));
 
-    // =====================================================
-    // SECURITY FILTER CHAIN
-    // =====================================================
+					config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            @Qualifier("customerAuthenticationManager")
-            AuthenticationManager authenticationManager)
-            throws Exception {
+					config.setAllowedHeaders(List.of("*"));
 
-        http
-                // =================================================
-                // CSRF
-                // =================================================
+					config.setAllowCredentials(true);
 
-                .csrf(csrf -> csrf.disable())
+					return config;
+				}))
 
+				// =================================================
+				// AUTHORIZATION
+				// =================================================
 
-                // =================================================
-                // CORS
-                // =================================================
+				.authorizeHttpRequests(auth -> auth
 
-                .cors(cors -> cors.configurationSource(request -> {
+						// PUBLIC APIs
+						.requestMatchers("/api/auth/**", "/oauth2/**", "/login/oauth2/**", "/error", "/swagger-ui/**",
+								"/v3/api-docs/**", "/contact/**",
 
-                    CorsConfiguration config =
-                            new CorsConfiguration();
+								// Admin login
+								"/api/admin/login",
 
-                    config.setAllowedOrigins(
-                            List.of("http://localhost:5173"));
+								// Delivery boy login
+								"/api/delivery/boy/login",
 
-                    config.setAllowedMethods(
-                            List.of(
-                                    "GET",
-                                    "POST",
-                                    "PUT",
-                                    "DELETE",
-                                    "OPTIONS"
-                            ));
+								// Public products/categories
+								"/api/farmer/products/show/products", "/api/farmer/categories/show/categories")
+						.permitAll()
 
-                    config.setAllowedHeaders(
-                            List.of("*"));
+						// FARMER APIs
+						.requestMatchers("/api/farmer/**").hasRole("FARMER")
 
-                    config.setAllowCredentials(true);
+						// BUYER APIs
+						.requestMatchers("/api/buyer/**").hasRole("BUYER")
 
-                    return config;
-                }))
+						// ADMIN APIs
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
+						// DELIVERY BOY APIs
+						.requestMatchers("/api/delivery/boy/orders", "/api/delivery/boy/orders/**")
+						.hasRole("DELIVERY_BOY")
 
-                // =================================================
-                // AUTHORIZATION
-                // =================================================
+						// EVERYTHING ELSE
+						.anyRequest().authenticated())
 
-                .authorizeHttpRequests(auth -> auth
+				// =================================================
+				// GOOGLE LOGIN
+				// =================================================
 
-                        // PUBLIC APIs
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/oauth2/**",
-                                "/login/oauth2/**",
-                                "/error",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/contact/**",
+				.oauth2Login(oauth -> oauth.successHandler(googleSuccessHandler))
 
-                                // Admin login
-                                "/api/admin/login",
+				// =================================================
+				// SESSION
+				// =================================================
 
-                                // Delivery boy login
-                                "/api/delivery/boy/login",
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 
-                                // Public products/categories
-                                "/api/farmer/products/show/products",
-                                "/api/farmer/categories/show/categories"
-                        )
-                        .permitAll()
+				// =================================================
+				// DEFAULT AUTHENTICATION MANAGER
+				// =================================================
 
+				.authenticationManager(authenticationManager);
 
-                        // FARMER APIs
-                        .requestMatchers("/api/farmer/**")
-                        .hasRole("FARMER")
+		// =====================================================
+		// JWT FILTER
+		// =====================================================
 
+		http.addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
-                        // BUYER APIs
-                        .requestMatchers("/api/buyer/**")
-                        .hasRole("BUYER")
-
-
-                        // ADMIN APIs
-                        .requestMatchers("/api/admin/**")
-                        .hasRole("ADMIN")
-
-
-                        // DELIVERY BOY APIs
-                        .requestMatchers("/api/delivery/boy/orders/**")
-                        .hasRole("DELIVERY_BOY")
-
-
-                        // EVERYTHING ELSE
-                        .anyRequest()
-                        .authenticated()
-                )
-
-
-                // =================================================
-                // GOOGLE LOGIN
-                // =================================================
-
-                .oauth2Login(oauth ->
-                        oauth.successHandler(
-                                googleSuccessHandler))
-
-
-                // =================================================
-                // SESSION
-                // =================================================
-
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.IF_REQUIRED))
-
-
-                // =================================================
-                // DEFAULT AUTHENTICATION MANAGER
-                // =================================================
-
-                .authenticationManager(authenticationManager);
-
-
-        // =====================================================
-        // JWT FILTER
-        // =====================================================
-
-        http.addFilterBefore(
-                jwtTokenFilter,
-                UsernamePasswordAuthenticationFilter.class);
-
-
-        return http.build();
-    }
+		return http.build();
+	}
 }

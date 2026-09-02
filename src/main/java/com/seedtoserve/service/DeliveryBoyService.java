@@ -1,6 +1,7 @@
 package com.seedtoserve.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,13 +19,15 @@ import com.seedtoserve.dto.DeliveryBoyLoginResponse;
 import com.seedtoserve.dto.DeliveryBoyOrderItemResponse;
 import com.seedtoserve.dto.DeliveryBoyOrderResponse;
 import com.seedtoserve.dto.DeliveryBoyRequest;
+import com.seedtoserve.dto.UpdateOrderStatusRequest;
+import com.seedtoserve.enums.OrderStatus;
 import com.seedtoserve.model.DeliveryBoy;
 import com.seedtoserve.model.Order;
 import com.seedtoserve.repository.DeliveryBoyRepository;
 import com.seedtoserve.repository.OrderRepository;
 import com.seedtoserve.security.JwtUtil;
 
-import lombok.RequiredArgsConstructor;
+import jakarta.transaction.Transactional;
 
 @Service
 public class DeliveryBoyService {
@@ -36,25 +39,33 @@ public class DeliveryBoyService {
 	private final DeliveryBoyEmailService deliveryBoyEmailService;
 
 	private final JwtUtil jwtUtil;
+	
+	private final BuyerOrderEmailService buyerOrderEmailService;
 
 	private final OrderRepository orderRepository;
 	private final AuthenticationManager deliveryBoyAuthenticationManager;
+
 
 	public DeliveryBoyService(
 	        DeliveryBoyRepository deliveryBoyRepository,
 	        PasswordEncoder passwordEncoder,
 	        DeliveryBoyEmailService deliveryBoyEmailService,
 	        JwtUtil jwtUtil,
+	        BuyerOrderEmailService buyerOrderEmailService,
 	        OrderRepository orderRepository,
 	        @Qualifier("deliveryBoyAuthenticationManager")
 	        AuthenticationManager deliveryBoyAuthenticationManager) {
+
+	    super();
 
 	    this.deliveryBoyRepository = deliveryBoyRepository;
 	    this.passwordEncoder = passwordEncoder;
 	    this.deliveryBoyEmailService = deliveryBoyEmailService;
 	    this.jwtUtil = jwtUtil;
+	    this.buyerOrderEmailService = buyerOrderEmailService;
 	    this.orderRepository = orderRepository;
-	    this.deliveryBoyAuthenticationManager = deliveryBoyAuthenticationManager;
+	    this.deliveryBoyAuthenticationManager =
+	            deliveryBoyAuthenticationManager;
 	}
 
 	// =====================================================
@@ -175,5 +186,65 @@ public class DeliveryBoyService {
 					order.getOrderDate(), address, items);
 
 		}).toList();
+	}
+
+	// =====================================================
+	// Update the order status
+	// =====================================================
+
+	@Transactional
+	public ResponseEntity<?> updateOrderStatus(int orderId, UpdateOrderStatusRequest request,
+			Authentication authentication) {
+
+		// Get logged-in delivery boy email/username from JWT
+		String email = authentication.getName();
+
+		DeliveryBoy deliveryBoy = deliveryBoyRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("Delivery boy not found"));
+
+		// Find order
+		Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+
+		// Check whether this order belongs to logged-in delivery boy
+		if (order.getDeliveryBoy() == null || order.getDeliveryBoy().getId() != deliveryBoy.getId()) {
+
+			throw new RuntimeException("This order is not assigned to you");
+		}
+
+		OrderStatus currentStatus = order.getOrderStatus();
+		OrderStatus newStatus = request.getOrderStatus();
+
+		// ASSIGNED -> SHIPPED
+		if (currentStatus == OrderStatus.ASSIGNED && newStatus == OrderStatus.SHIPPED) {
+
+			order.setOrderStatus(OrderStatus.SHIPPED);
+		}
+
+		// SHIPPED -> OUT_FOR_DELIVERY
+		else if (currentStatus == OrderStatus.SHIPPED && newStatus == OrderStatus.OUT_FOR_DELIVERY) {
+
+			order.setOrderStatus(OrderStatus.OUT_FOR_DELIVERY);
+		}
+
+		// OUT_FOR_DELIVERY -> DELIVERED
+		else if (currentStatus == OrderStatus.OUT_FOR_DELIVERY && newStatus == OrderStatus.DELIVERED) {
+
+			order.setOrderStatus(OrderStatus.DELIVERED);
+
+			// Delivery boy is available for another order
+			deliveryBoy.setAvailable(true);
+			deliveryBoyRepository.save(deliveryBoy);
+		}
+
+		else {
+			throw new RuntimeException("Invalid order status transition: " + currentStatus + " -> " + newStatus);
+		}
+
+		orderRepository.save(order);
+
+		buyerOrderEmailService.sendOrderStatusEmail(order);
+
+		return ResponseEntity.ok(Map.of("message", "Order status updated successfully", "orderId", order.getId(),
+				"orderStatus", order.getOrderStatus()));
 	}
 }
