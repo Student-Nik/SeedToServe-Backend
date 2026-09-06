@@ -26,25 +26,26 @@ import com.seedtoserve.security.JwtUtil;
 @Service
 public class CustomerService {
 
-	@Autowired
-	private CustomerRepository customerRepository;
+	private final CustomerRepository customerRepository;
 
-	@Autowired
-	private JwtUtil jwtUtil;
+	private final JwtUtil jwtUtil;
 
-	@Autowired
-	@Qualifier("customerAuthenticationManager")
-	private AuthenticationManager authenticationManager;
+	private final AuthenticationManager authenticationManager;
 
-	@Autowired
-	private MailService mailService;
+	private final MailService mailService;
 
-	private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+	private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-	// =====================================================
-	// REGISTER
-	// =====================================================
+	private CustomerService(CustomerRepository customerRepository, JwtUtil jwtUtil, @Qualifier("customerAuthenticationManager")
+			AuthenticationManager authenticationManager, MailService mailService) {
+		super();
+		this.customerRepository = customerRepository;
+		this.jwtUtil = jwtUtil;
+		this.authenticationManager = authenticationManager;
+		this.mailService = mailService;
+	}
 
+	// Register
 	public ResponseEntity<Map<String, Object>> registerUser(CustomerDTO customerDto) {
 
 		// Check duplicate email
@@ -89,38 +90,10 @@ public class CustomerService {
 	}
 
 	// =====================================================
-	// LOGIN
+	// FARMER/BUYER LOGIN, we are integrating all roles in single endpoint
 	// =====================================================
 
-	public ResponseEntity<ApiResponse<JwtLoginResponse>> loginUser(LoginRequest loginRequest) {
-
-		try {
-
-			Authentication auth = authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-
-			CustomerUserDetails userDetails = (CustomerUserDetails) auth.getPrincipal();
-
-			Customer customer = userDetails.getCustomer();
-
-			String role = customer.getRegistrationType().toUpperCase();
-
-			String token = jwtUtil.createToken(userDetails.getUsername(), role);
-
-			JwtLoginResponse jwtResponse = new JwtLoginResponse();
-
-			jwtResponse.setToken(token);
-			jwtResponse.setUsername(customer.getEmail());
-			jwtResponse.setRole(role);
-
-			return ResponseEntity.ok(new ApiResponse<>(true, "Login successful!", jwtResponse));
-
-		} catch (BadCredentialsException e) {
-
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new ApiResponse<>(false, "Invalid Credentials!", null));
-		}
-	}
+	// pending work
 
 	// =====================================================
 	// GET LOGGED-IN CUSTOMER

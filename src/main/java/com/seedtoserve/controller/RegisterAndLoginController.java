@@ -48,40 +48,4 @@ public class RegisterAndLoginController {
 		return customerService.registerUser(customerDto);
 	}
 
-	// Login
-	@PostMapping("/api/auth/login")
-	public ResponseEntity<JwtLoginResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
-
-		try {
-
-			// Authenticate the user
-			Authentication auth = authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-
-			// Get authenticated user details
-			CustomerUserDetails userDetails = (CustomerUserDetails) auth.getPrincipal();
-
-			Customer customer = userDetails.getCustomer();
-
-			// Get role
-			String role = customer.getRegistrationType().toUpperCase();
-
-			// Generate JWT token
-			String token = jwtUtil.createToken(customer.getEmail(), role);
-
-			// Build JWT response
-			JwtLoginResponse response = new JwtLoginResponse();
-
-			response.setToken(token);
-			response.setUsername(customer.getEmail());
-			response.setRole(role);
-
-			return ResponseEntity.ok(response);
-
-		} catch (BadCredentialsException e) {
-
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		}
-	}
-
 }

@@ -106,45 +106,6 @@ public class DeliveryBoyService {
 	}
 
 	// =====================================================
-	// DELIVERY BOY LOGIN
-	// =====================================================
-
-	public ResponseEntity<?> login(DeliveryBoyLoginRequest request) {
-
-		try {
-
-			Authentication authentication = deliveryBoyAuthenticationManager
-					.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-
-			/*
-			 * Authentication successful.
-			 *
-			 * DeliveryBoyUserAuthenticationService has already:
-			 *
-			 * 1. Found the delivery boy 2. Loaded the encoded password 3. Checked the
-			 * password 4. Assigned ROLE_DELIVERY_BOY
-			 */
-
-			String email = authentication.getName();
-
-			DeliveryBoy deliveryBoy = deliveryBoyRepository.findByEmail(email)
-					.orElseThrow(() -> new RuntimeException("Delivery boy not found"));
-
-			// Create JWT
-			String token = jwtUtil.createToken(deliveryBoy.getEmail(), "DELIVERY_BOY");
-
-			DeliveryBoyLoginResponse response = new DeliveryBoyLoginResponse("Delivery Boy Login Successful", token,
-					deliveryBoy.getId(), deliveryBoy.getFirstName(), deliveryBoy.getLastName(), deliveryBoy.getEmail());
-
-			return ResponseEntity.ok(response);
-
-		} catch (BadCredentialsException e) {
-
-			throw new RuntimeException("Invalid email or password");
-		}
-	}
-
-	// =====================================================
 	// SHOW ALL DELIVERY BOYS
 	// =====================================================
 

@@ -166,10 +166,10 @@ public class SecurityConfig {
 								"/v3/api-docs/**", "/contact/**",
 
 								// Admin login
-								"/api/admin/login",
+								//"/api/admin/login",
 
 								// Delivery boy login
-								"/api/delivery/boy/login",
+								//"/api/delivery/boy/login",
 
 								// Public products/categories
 								"/api/farmer/products/show/products", "/api/farmer/categories/show/categories")

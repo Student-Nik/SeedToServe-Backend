@@ -31,12 +31,6 @@ public class AdminController {
 
 	private final AdminService adminService;
 
-	// Admin Log in
-	@PostMapping("/login")
-	public ResponseEntity<AdminLoginResponse> login(@Valid @RequestBody AdminLoginRequest request) {
-		return ResponseEntity.ok(adminService.login(request));
-	}
-
 	// Admin Profile
 	@GetMapping("/profile")
 	public ResponseEntity<AdminProfileResponse> getProfile(Authentication authentication) {

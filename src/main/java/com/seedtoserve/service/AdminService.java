@@ -49,67 +49,28 @@ public class AdminService {
 
 	private final DeliveryBoyEmailService deliveryBoyEmailService;
 
-	public AdminService(AdminRepository adminRepository, JwtUtil jwtUtil, CustomerRepository customerRepository,
-			ProductRepository productRepository, OrderRepository orderRepository,
-			DeliveryBoyRepository deliveryBoyRepository, DeliveryBoyEmailService deliveryBoyEmailService,
-			@Qualifier("adminAuthenticationManager") AuthenticationManager adminAuthenticationManager) {
-
-		this.adminRepository = adminRepository;
-		this.jwtUtil = jwtUtil;
-		this.customerRepository = customerRepository;
-		this.productRepository = productRepository;
-		this.orderRepository = orderRepository;
-		this.deliveryBoyRepository = deliveryBoyRepository;
-		this.deliveryBoyEmailService = deliveryBoyEmailService;
-		this.adminAuthenticationManager = adminAuthenticationManager;
-	}
-
-	// =====================================================
-	// ADMIN AUTHENTICATION MANAGER
-	// =====================================================
-
-	@Qualifier("adminAuthenticationManager")
 	private final AuthenticationManager adminAuthenticationManager;
+	
+	public AdminService(
+            AdminRepository adminRepository,
+            JwtUtil jwtUtil,
+            CustomerRepository customerRepository,
+            ProductRepository productRepository,
+            OrderRepository orderRepository,
+            DeliveryBoyRepository deliveryBoyRepository,
+            DeliveryBoyEmailService deliveryBoyEmailService,
+            @Qualifier("adminAuthenticationManager")
+            AuthenticationManager adminAuthenticationManager) {
 
-	// =====================================================
-	// ADMIN LOGIN
-	// =====================================================
-
-	public AdminLoginResponse login(AdminLoginRequest request) {
-
-		System.out.println("=================================");
-		System.out.println("ADMIN LOGIN REQUEST");
-		System.out.println("Email: " + request.getEmail());
-		System.out.println("=================================");
-
-		try {
-
-			Authentication authentication = adminAuthenticationManager
-					.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-
-			System.out.println("ADMIN AUTHENTICATION SUCCESS");
-			System.out.println("Authenticated user: " + authentication.getName());
-			System.out.println("Authorities: " + authentication.getAuthorities());
-
-			String email = authentication.getName();
-
-			Admin admin = adminRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Admin not found"));
-
-			if (!"ACTIVE".equalsIgnoreCase(admin.getStatus())) {
-				throw new RuntimeException("Admin account is inactive");
-			}
-
-			String token = jwtUtil.createToken(admin.getEmail(), "ADMIN");
-
-			return new AdminLoginResponse(token, admin.getId(), admin.getEmail(), "ADMIN");
-
-		} catch (BadCredentialsException e) {
-
-			e.printStackTrace();
-
-			throw new RuntimeException("Invalid email or password");
-		}
-	}
+        this.adminRepository = adminRepository;
+        this.jwtUtil = jwtUtil;
+        this.customerRepository = customerRepository;
+        this.productRepository = productRepository;
+        this.orderRepository = orderRepository;
+        this.deliveryBoyRepository = deliveryBoyRepository;
+        this.deliveryBoyEmailService = deliveryBoyEmailService;
+        this.adminAuthenticationManager = adminAuthenticationManager;
+    }
 
 	// =====================================================
 	// ADMIN PROFILE

@@ -28,11 +28,6 @@ public class DeliveryBoyLoginController {
 
 	private final DeliveryBoyService deliveryBoyService;
 
-	@PostMapping("/login")
-	public ResponseEntity<?> login(@Valid @RequestBody DeliveryBoyLoginRequest request) {
-		return deliveryBoyService.login(request);
-	}
-
 	// Get all assigned orders
 	@GetMapping("/orders")
 	public ResponseEntity<List<DeliveryBoyOrderResponse>> getAssignedOrders(Authentication authentication) {
