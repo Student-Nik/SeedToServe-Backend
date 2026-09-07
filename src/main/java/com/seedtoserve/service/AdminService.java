@@ -146,7 +146,7 @@ public class AdminService {
 				address.getMobileNo(), address.getHouseNoOrStreet(), address.getVillageOrTown(), address.getDistrict(),
 				address.getState(), address.getPincode());
 
-		return new AdminOrderDetailsResponse(order.getId(), order.getCustomer().getFirstName(), order.getTotalAmount(),
+		return new AdminOrderDetailsResponse(order.getId(), order.getCustomer().getFirstName()+" "+order.getCustomer().getLastName(), order.getTotalAmount(),
 				order.getPaymentMethod(), order.getPaymentStatus(), order.getOrderStatus(), order.getOrderDate(),
 				addressResponse, items);
 	}
