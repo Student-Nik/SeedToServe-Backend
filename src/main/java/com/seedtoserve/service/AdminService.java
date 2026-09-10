@@ -103,6 +103,7 @@ public class AdminService {
 
 		long cancelledOrders = orderRepository.countByOrderStatus(OrderStatus.CANCELLED);
 
+		// Revenue will be calculated only when the order status is delivered.
 		Double revenue = orderRepository.getTotalRevenueByStatus(OrderStatus.DELIVERED);
 
 		BigDecimal totalRevenue = BigDecimal.valueOf(revenue != null ? revenue : 0.0);

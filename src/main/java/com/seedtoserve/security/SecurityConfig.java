@@ -165,12 +165,6 @@ public class SecurityConfig {
 						.requestMatchers("/api/auth/**", "/oauth2/**", "/login/oauth2/**", "/error", "/swagger-ui/**",
 								"/v3/api-docs/**", "/contact/**",
 
-								// Admin login
-								//"/api/admin/login",
-
-								// Delivery boy login
-								//"/api/delivery/boy/login",
-
 								// Public products/categories
 								"/api/farmer/products/show/products", "/api/farmer/categories/show/categories")
 						.permitAll()
