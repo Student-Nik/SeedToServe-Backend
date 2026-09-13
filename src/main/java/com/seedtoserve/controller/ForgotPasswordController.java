@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.seedtoserve.dto.ForgotPasswordRequest;
+import com.seedtoserve.dto.ResetPasswordRequest;
 import com.seedtoserve.service.ForgotPasswordService;
 
 import lombok.RequiredArgsConstructor;
@@ -29,5 +30,18 @@ public class ForgotPasswordController {
 		}
 
 		return ResponseEntity.ok(Map.of("message", "Email not found"));
+	}
+
+	@PostMapping("/reset-password")
+	public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+
+		boolean success = forgotPasswordService.resetPassword(request.getEmail(), request.getOtp(),
+				request.getNewPassword());
+
+		if (!success) {
+			return ResponseEntity.badRequest().body(Map.of("message", "Invalid OTP or email"));
+		}
+
+		return ResponseEntity.ok(Map.of("message", "Password reset successful. Please login."));
 	}
 }
