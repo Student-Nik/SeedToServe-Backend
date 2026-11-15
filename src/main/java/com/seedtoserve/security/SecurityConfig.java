@@ -182,6 +182,8 @@ public class SecurityConfig {
 						.requestMatchers("/api/delivery/boy/orders", "/api/delivery/boy/orders/**")
 						.hasRole("DELIVERY_BOY")
 
+						.requestMatchers("/api/v1/market-prices").hasRole("ADMIN")
+
 						// EVERYTHING ELSE
 						.anyRequest().authenticated())
 
