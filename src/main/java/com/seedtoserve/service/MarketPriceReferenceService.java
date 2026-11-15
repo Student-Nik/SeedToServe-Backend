@@ -41,10 +41,10 @@ public class MarketPriceReferenceService {
 	}
 
 	// Get market prices by commodity and location
-	public List<MarketPriceReferenceResponse> getMarketPrices(String commodityName, String district, String state) {
+	public List<MarketPriceReferenceResponse> getMarketPrices(String productName, String district, String state) {
 
 		List<MarketPriceReference> prices = marketPriceReferenceRepository
-				.findByProductNameIgnoreCaseAndDistrictIgnoreCaseAndStateIgnoreCase(commodityName, district, state);
+				.findByProductNameIgnoreCaseAndDistrictIgnoreCaseAndStateIgnoreCase(productName, district, state);
 
 		return prices.stream().map(this::convertToResponse).toList();
 	}
